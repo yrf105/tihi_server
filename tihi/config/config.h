@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
 #include <exception>
+#include <functional>
 #include <list>
 #include <map>
 #include <memory>
@@ -252,6 +253,8 @@ template <typename T, typename FromStr = LexicalCast<std::string, T>,
 class ConfigVar : public ConfigVarInterface {
 public:
     using ptr = std::shared_ptr<ConfigVar>;
+    using on_change_cb = std::function<void (const T& old_val, const T& new_val)>;
+
 
     ConfigVar(std::string name, const T& default_val,
               const std::string& description)
@@ -283,12 +286,40 @@ public:
     }
 
     T value() const { return val_; }
-    void set_value(const T& v) { val_ = v; }
+    void set_value(const T& v) {
+        if (val_ == v) {
+            return ;
+        }
+
+        for (auto& i : cbs_) {
+            i.second(val_, v);
+        }
+
+        val_ = v;
+    }
 
     std::string typeID() const override { return typeid(T).name(); }
 
+    void addListener(uint64_t key, on_change_cb val) {
+        cbs_[key] = val;
+    }
+
+    void delListener(uint64_t key) {
+        cbs_.erase(key);
+    }
+
+    on_change_cb listener(uint64_t key) {
+        auto ret = cbs_.find(key);
+        return ret == cbs_.end() ? nullptr : ret->second;
+    }
+
+    void clearListener() {
+        cbs_.clear();
+    }
+
 private:
     T val_;
+    std::map<uint64_t, on_change_cb> cbs_;
 };
 
 class Config {

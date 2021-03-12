@@ -45,7 +45,7 @@ void Config::LoadFromYAML(const YAML::Node& root) {
 
     for (auto& it : all_members) {
         std::string key = it.first;
-        TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << key;
+        // TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << key;
         if (key.empty()) {
             continue ;
         }

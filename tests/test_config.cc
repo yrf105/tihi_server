@@ -124,10 +124,18 @@ struct Person {
     int age_ = 0;
     bool man_ = true;
 
-    std::string ToString() {
+    std::string ToString() const {
         std::stringstream ss;
         ss << "name: " << name_ << " age: " << age_ << " man: " << man_;
         return ss.str();
+    }
+
+    bool operator==(const Person& oth) const {
+        if (name_ == oth.name_ && age_ == oth.age_ && man_ == oth.man_) {
+            return true;
+        }
+
+        return false;
     }
 };
 
@@ -171,8 +179,13 @@ tihi::ConfigVar<std::map<std::string, Person>>::ptr g_person_map =
     tihi::Config::Lookup<std::map<std::string, Person>>(
         "class.map", {{"yue", Person()}}, "class map");
 
-
 void test_class() {
+    g_person->addListener(11, [](const Person& oldPerson,
+                                 const Person& newPerson) {
+        TIHI_LOG_INFO(TIHI_LOG_ROOT()) << "old_val: " << oldPerson.ToString()
+                                       << " new_val" << newPerson.ToString();
+    });
+
 #define XX(g_val, name, prefix)                                             \
     do {                                                                    \
         auto val = g_val->value();                                          \
