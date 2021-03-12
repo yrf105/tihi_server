@@ -22,14 +22,14 @@ void ListAllMembers(const std::string& prefix, const YAML::Node& node,
         return;
     }
 
-    if (node.IsScalar()) {
-        ret.push_back(std::make_pair(prefix, node));
-    } else if (node.IsMap()) {
+    if (node.IsMap()) {
         for (auto& it : node) {
             ListAllMembers(
                 prefix.empty() ? it.first.Scalar() : prefix + "." + it.first.Scalar(),
                 it.second, ret);
         }
+    } else {
+        ret.push_back(std::make_pair(prefix, node));
     }
 }
 
@@ -43,6 +43,9 @@ void Config::LoadFromYAML(const YAML::Node& root) {
             return ;
         }
 
+        /*
+        只能配置程序里有的参数，程序里没有的参数就算配置了也不起作用
+        */
         ConfigVarInterface::ptr var = LookupInterface(it.first);
         if (var) {
             if (it.second.IsScalar()) {

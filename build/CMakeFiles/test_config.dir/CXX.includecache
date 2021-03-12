@@ -367,10 +367,10 @@ string
 -
 vector
 -
-yaml-cpp/yaml.h
-../tihi/config/yaml-cpp/yaml.h
 log/log.h
 ../tihi/config/log/log.h
+yaml-cpp/yaml.h
+../tihi/config/yaml-cpp/yaml.h
 
 ../tihi/log/log.h
 stdarg.h
@@ -416,5 +416,7 @@ config/config.h
 yaml-cpp/yaml.h
 /home/wddxrw/myproject/tihi_server/tests/yaml-cpp/yaml.h
 iostream
+-
+vector
 -
 

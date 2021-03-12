@@ -1,7 +1,7 @@
 # my ignore
-/.vscode/
-/build/
-/.clang-format
+.vscode/
+build/
+.clang-format
 
 # Prerequisites
 *.d

@@ -3,6 +3,7 @@
 #include "yaml-cpp/yaml.h"
 
 #include <iostream>
+#include <vector>
 
 void print_yaml(const YAML::Node& node, int level) {
     if (node.IsNull()) {
@@ -26,18 +27,29 @@ void test_yaml() {
     YAML::Node root = YAML::LoadFile("../bin/config.yml");
 
     print_yaml(root, 0);
-
-    // TIHI_LOG_INFO(TIHI_LOG_ROOT()) << root;
 }
+
+tihi::ConfigVar<std::vector<int>>::ptr g_vec_int_value_config = 
+    tihi::Config::Lookup<std::vector<int>>("system.vec", std::vector<int>({1,2}), "system vec");
 
 void test_config() {
     tihi::Config::Lookup<int>("system.port", 80, "http_port");
     TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << "before: " << tihi::Config::Lookup<int>("system.port")->toString();
+    auto vec = g_vec_int_value_config->value();
+    for (auto i : vec) {
+        TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << "before: " << i;
+    } 
 
     YAML::Node root = YAML::LoadFile("../bin/config.yml");
     tihi::Config::LoadFromYAML(root);
 
     TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << "after: " << tihi::Config::Lookup<int>("system.port")->toString();
+
+    g_vec_int_value_config = tihi::Config::Lookup<std::vector<int>>("system.vec");
+    vec = g_vec_int_value_config->value();
+    for (auto i : vec) {
+        TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << "after: " << i;
+    }
 }
 
 void test() {
