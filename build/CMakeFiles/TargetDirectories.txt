@@ -1,5 +1,0 @@
-/home/wddxrw/myproject/tihi_server/build/CMakeFiles/rebuild_cache.dir
-/home/wddxrw/myproject/tihi_server/build/CMakeFiles/edit_cache.dir
-/home/wddxrw/myproject/tihi_server/build/CMakeFiles/test_config.dir
-/home/wddxrw/myproject/tihi_server/build/CMakeFiles/test.dir
-/home/wddxrw/myproject/tihi_server/build/CMakeFiles/tihi.dir
