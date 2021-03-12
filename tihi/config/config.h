@@ -4,14 +4,14 @@
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
 #include <exception>
-#include <memory>
-#include <string>
-#include <vector>
 #include <list>
 #include <map>
+#include <memory>
 #include <set>
-#include <unordered_set>
+#include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include "log/log.h"
 #include "yaml-cpp/yaml.h"
@@ -30,6 +30,7 @@ public:
 
     virtual std::string toString() = 0;
     virtual bool formString(const std::string& v) = 0;
+    virtual std::string typeID() const = 0;
 
 private:
     std::string name_;
@@ -196,7 +197,8 @@ public:
     std::string operator()(const std::map<std::string, T>& v) {
         YAML::Node node;
         for (const auto& it : v) {
-            node[it.first] = YAML::Load(LexicalCast<T, std::string>()(it.second));
+            node[it.first] =
+                YAML::Load(LexicalCast<T, std::string>()(it.second));
         }
 
         std::stringstream ss;
@@ -228,7 +230,8 @@ public:
     std::string operator()(const std::unordered_map<std::string, T>& v) {
         YAML::Node node;
         for (const auto& it : v) {
-            node[it.first] = YAML::Load(LexicalCast<T, std::string>()(it.second));
+            node[it.first] =
+                YAML::Load(LexicalCast<T, std::string>()(it.second));
         }
 
         std::stringstream ss;
@@ -282,13 +285,16 @@ public:
     T value() const { return val_; }
     void set_value(const T& v) { val_ = v; }
 
+    std::string typeID() const override { return typeid(T).name(); }
+
 private:
     T val_;
 };
 
 class Config {
 public:
-    using ConfigVarMap = std::unordered_map<std::string, ConfigVarInterface::ptr>;
+    using ConfigVarMap =
+        std::unordered_map<std::string, ConfigVarInterface::ptr>;
 
     template <typename T>
     static typename ConfigVar<T>::ptr Lookup(const std::string& name) {
@@ -309,11 +315,18 @@ public:
             throw(std::invalid_argument(name));
         }
 
-        auto ret = Lookup<T>(name);
-        if (ret) {
-            TIHI_LOG_INFO(TIHI_LOG_ROOT())
-                << "Lookup name= " << name << " exited";
-            return ret;
+        auto ret = datas_.find(name);
+        if (ret != datas_.end()) {
+            auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(ret->second);
+            if (tmp) {
+                TIHI_LOG_ERROR(TIHI_LOG_ROOT()) << name << " have existed.";
+                return tmp;
+            } else {
+                TIHI_LOG_ERROR(TIHI_LOG_ROOT())
+                    << name << " have existed. type: " << ret->second->typeID()
+                    << " value: " << ret->second->toString();
+                return nullptr;
+            }
         }
 
         typename ConfigVar<T>::ptr v(

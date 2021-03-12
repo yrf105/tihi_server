@@ -5,6 +5,8 @@
 #include "log/log.h"
 #include "yaml-cpp/yaml.h"
 
+
+#if 0
 void print_yaml(const YAML::Node& node, int level) {
     if (node.IsNull()) {
         TIHI_LOG_INFO(TIHI_LOG_ROOT())
@@ -67,6 +69,9 @@ void test_config() {
     tihi::Config::Lookup<int>("system.port", 80, "http_port");
     TIHI_LOG_DEBUG(TIHI_LOG_ROOT())
         << "before: " << tihi::Config::Lookup<int>("system.port")->toString();
+    tihi::Config::Lookup<float>("system.port", 80, "http_port");
+    // TIHI_LOG_DEBUG(TIHI_LOG_ROOT())
+    //     << "before: " << tihi::Config::Lookup<float>("system.port")->toString();
 
 #define XX(g_val, name, prefix)                                              \
     do {                                                                     \
@@ -112,8 +117,91 @@ void test_config() {
 #undef XX
 #undef XX_MAP
 }
+#endif
 
-void test() { test_config(); }
+struct Person {
+    std::string name_;
+    int age_ = 0;
+    bool man_ = true;
+
+    std::string ToString() {
+        std::stringstream ss;
+        ss << "name: " << name_ << " age: " << age_ << " man: " << man_;
+        return ss.str();
+    }
+};
+
+namespace tihi {
+template <>
+class LexicalCast<std::string, Person> {
+public:
+    Person operator()(const std::string& v) {
+        YAML::Node node = YAML::Load(v);
+        Person ret;
+        std::stringstream ss;
+        ret.name_ = node["name"].as<std::string>();
+        ret.age_ = node["age"].as<int>();
+        ret.man_ = node["man"].as<bool>();
+
+        return ret;
+    }
+};
+
+template <>
+class LexicalCast<Person, std::string> {
+public:
+    std::string operator()(const Person& v) {
+        YAML::Node node;
+        node["name"] = v.name_;
+        node["age"] = v.age_;
+        node["man"] = v.man_;
+
+        std::stringstream ss;
+        ss << node;
+
+        return ss.str();
+    }
+};
+}  // namespace tihi
+
+tihi::ConfigVar<Person>::ptr g_person =
+    tihi::Config::Lookup<Person>("class.person", Person(), "class person");
+
+tihi::ConfigVar<std::map<std::string, Person>>::ptr g_person_map =
+    tihi::Config::Lookup<std::map<std::string, Person>>(
+        "class.map", {{"yue", Person()}}, "class map");
+
+
+void test_class() {
+#define XX(g_val, name, prefix)                                             \
+    do {                                                                    \
+        auto val = g_val->value();                                          \
+        TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << #prefix " size: " << val.size(); \
+        for (auto& i : val) {                                               \
+            TIHI_LOG_DEBUG(TIHI_LOG_ROOT())                                 \
+                << #prefix " " #name << i.first << " : "                    \
+                << i.second.ToString() << "\n";                             \
+        }                                                                   \
+    } while (0)
+
+    TIHI_LOG_DEBUG(TIHI_LOG_ROOT())
+        << "before: " << g_person->toString() << "\n"
+        << g_person->value().ToString();
+    XX(g_person_map, "class.map", "before");
+
+    YAML::Node root = YAML::LoadFile("../bin/config.yml");
+    tihi::Config::LoadFromYAML(root);
+
+    TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << "after: " << g_person->toString() << "\n"
+                                    << g_person->value().ToString();
+    XX(g_person_map, "class.map", "after");
+#undef XX
+}
+
+void test() {
+    // test_config();
+    test_class();
+}
 
 int main(int argc, char** argv) {
     test();

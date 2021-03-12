@@ -25,4 +25,19 @@ system:
     eleven: 110
     twelve: 120
 
+class:
+  person:
+    name: "yue"
+    age: 25
+    man: true
+  map:
+    yue01:
+      name: "yue01"
+      age: 25
+      man: true
+    yue02:
+      name: "yue02"
+      age: 30
+      man: false
+
   

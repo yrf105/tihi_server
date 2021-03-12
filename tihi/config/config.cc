@@ -25,7 +25,7 @@ void ListAllMembers(const std::string& prefix, const YAML::Node& node,
     ret.push_back(std::make_pair(prefix, node));
 
     /*
-    如果最外层是 map 的话，会把每一层都保存一下
+    如果是 map 的话，会把每一层都保存一下
     */
     if (node.IsMap()) {
         for (auto& it : node) {
