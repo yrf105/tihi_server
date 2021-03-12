@@ -22,15 +22,21 @@ void ListAllMembers(const std::string& prefix, const YAML::Node& node,
         return;
     }
 
+    ret.push_back(std::make_pair(prefix, node));
+
+    /*
+    如果最外层是 map 的话，会把每一层都保存一下
+    */
     if (node.IsMap()) {
         for (auto& it : node) {
             ListAllMembers(
                 prefix.empty() ? it.first.Scalar() : prefix + "." + it.first.Scalar(),
                 it.second, ret);
         }
-    } else {
-        ret.push_back(std::make_pair(prefix, node));
-    }
+    } 
+    // else {
+    //     ret.push_back(std::make_pair(prefix, node));
+    // }
 }
 
 void Config::LoadFromYAML(const YAML::Node& root) {
@@ -39,8 +45,9 @@ void Config::LoadFromYAML(const YAML::Node& root) {
 
     for (auto& it : all_members) {
         std::string key = it.first;
+        TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << key;
         if (key.empty()) {
-            return ;
+            continue ;
         }
 
         /*

@@ -15,4 +15,14 @@ logs:
 system:
   port: 8080
   vec: [10, 20]
+  list: [30, 40]
+  set: [50, 60]
+  uset: [70, 80, 80]
+  map:
+    nine: 90
+    ten: 100
+  umap:
+    eleven: 110
+    twelve: 120
+
   
