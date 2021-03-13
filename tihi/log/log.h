@@ -15,6 +15,7 @@
 
 #include "utils/singleton.h"
 #include "utils/utils.h"
+#include "utils/mutex.h"
 
 #define TIHI_LOG_LEVEL(logger, grade)                                        \
     if (logger->level() <= grade)                                            \
@@ -154,30 +155,34 @@ private:
 class LogAppender {
 public:
     using ptr = std::shared_ptr<LogAppender>;
+    using mutex_type = NullRWMutex;
 
     virtual ~LogAppender(){};
 
     virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level,
                      LogEvent::ptr event) = 0;
 
-    LogFormatter::ptr formatter() const { return formatter_; }
+    LogFormatter::ptr formatter();
     void set_formatter(LogFormatter::ptr val, bool from_logger);
     LogLevel::Level level() const { return level_; }
     void set_level(LogLevel::Level level) { level_ = level; }
 
-    virtual const std::string toYAMLString() const = 0;
+    virtual const std::string toYAMLString() = 0;
     bool hasFormatter() const { return hasFormatter_; }
 
 protected:
     LogLevel::Level level_ = LogLevel::Level::DEBUG;
     LogFormatter::ptr formatter_;
     bool hasFormatter_ = false;
+
+    mutex_type mutex_;
 };
 
 class Logger : public std::enable_shared_from_this<Logger> {
 friend class LoggerManager;
 public:
     using ptr = std::shared_ptr<Logger>;
+    using mutex_type = NullRWMutex;
 
     Logger(const std::string& name = "root");
 
@@ -198,7 +203,7 @@ public:
     void clearAppenders();
     std::shared_ptr<Logger> getptr() { return shared_from_this(); }
 
-    const std::string toYAMLString() const;
+    const std::string toYAMLString();
 private:
     std::string name_;
     LogLevel::Level level_;
@@ -206,6 +211,8 @@ private:
     std::list<LogAppender::ptr> appenders_;
 
     Logger::ptr root_;
+
+    mutex_type mutex_;
 };
 
 class StdOutLogAppender : public LogAppender {
@@ -215,7 +222,7 @@ public:
     virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level,
                      LogEvent::ptr event) override;
     
-    const std::string toYAMLString() const override;
+    const std::string toYAMLString() override;
 };
 
 class FileLogAppender : public LogAppender {
@@ -228,25 +235,31 @@ public:
                      LogEvent::ptr event) override;
     bool reopen();
 
-    const std::string toYAMLString() const override;
+    const std::string toYAMLString() override;
 private:
     std::string file_name_;
     std::ofstream file_stream_;
+
+    time_t last_time_ = 0;
 };
 
 class LoggerManager {
 public:
+    using mutex_type = NullRWMutex;
+
     LoggerManager();
     Logger::ptr logger(const std::string& name);
 
     Logger::ptr root() const { return root_; }
-    const std::string toYAMLString() const;
+    const std::string toYAMLString();
 private:
     void init();
 
 private:
     Logger::ptr root_;
     std::map<std::string, Logger::ptr> loggers_;
+
+    mutex_type mutex_;
 };
 
 using LoggerMgr = SingletonPtr<LoggerManager>;

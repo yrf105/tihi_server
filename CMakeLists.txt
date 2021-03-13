@@ -28,6 +28,8 @@ link_directories(third_party/yaml-cpp/bulid)
 set(LIB_SRC
     tihi/log/log.cc
     tihi/utils/utils.cc
+    tihi/utils/noncopyable.cc
+    tihi/utils/mutex.cc
     tihi/config/config.cc
     tihi/thread/thread.cc)
 

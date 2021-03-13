@@ -21,6 +21,9 @@ Thread::Thread(std::function<void()> cb, const std::string& name)
             << "Thread create failed. rt: " << rt << " name: " << name;
         throw std::logic_error("pthread_create error");
     }
+
+    // 信号量的值为零会阻塞，直到信号量的值大于零或者有信号中断调用
+    semaphore_.wait();
 }
 
 Thread::~Thread() {
@@ -61,6 +64,8 @@ void* Thread::run(void* arg) {
 
     std::function<void()> cb;
     cb.swap(thread->cb_);
+
+    thread->semaphore_.notify();
 
     cb();
 

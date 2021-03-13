@@ -8,9 +8,12 @@
 #include <memory>
 #include <string>
 
+#include "utils/noncopyable.h"
+#include "utils/mutex.h"
+
 namespace tihi {
 
-class Thread {
+class Thread : public Noncopyable {
 public:
     using ptr = std::shared_ptr<Thread>;
 
@@ -28,10 +31,6 @@ public:
     void join();
 
 private:
-    Thread(const Thread&) = delete;
-    Thread(const Thread&&) = delete;
-    Thread& operator=(const Thread&) = delete;
-
     static void* run(void*);
 
 private:
@@ -39,6 +38,8 @@ private:
     std::string name_;
     pid_t id_ = -1;
     pthread_t thread_ = 0;
+
+    Semaphore semaphore_;
 };
 
 }  // namespace tihi
