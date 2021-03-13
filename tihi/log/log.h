@@ -49,10 +49,12 @@
     TIHI_LOG_FMT_LEVEL(logger, tihi::LogLevel::FATAL, fmt, __VA_ARGS__)
 
 #define TIHI_LOG_ROOT() tihi::LoggerMgr::GetInstance()->root()
+#define TIHI_LOG_LOGGER(name) tihi::LoggerMgr::GetInstance()->logger(name)
 
 namespace tihi {
 
 class Logger;
+class LoggerManager;
 
 class LogLevel {
 public:
@@ -66,6 +68,7 @@ public:
     };
 
     static const char* ToString(LogLevel::Level level);
+    static Level FormString(const std::string& str);
 };
 
 class LogEvent {
@@ -121,6 +124,8 @@ public:
 
     std::string format(std::shared_ptr<Logger> logger, LogLevel::Level level,
                        LogEvent::ptr event);
+    const std::string& pattern() const { return pattern_; }
+    bool isError() { return error_; }
 
 public:
     class FormatItem {
@@ -139,10 +144,11 @@ public:
     void init();
     bool pattern_parser(
         std::vector<std::tuple<std::string, std::string, int>>& vec);
-
 private:
     std::string pattern_;
     std::vector<FormatItem::ptr> items_;
+
+    bool error_ = false;
 };
 
 class LogAppender {
@@ -155,16 +161,21 @@ public:
                      LogEvent::ptr event) = 0;
 
     LogFormatter::ptr formatter() const { return formatter_; }
-    void set_formatter(LogFormatter::ptr val) { formatter_ = val; }
+    void set_formatter(LogFormatter::ptr val, bool from_logger);
     LogLevel::Level level() const { return level_; }
     void set_level(LogLevel::Level level) { level_ = level; }
+
+    virtual const std::string toYAMLString() const = 0;
+    bool hasFormatter() const { return hasFormatter_; }
 
 protected:
     LogLevel::Level level_ = LogLevel::Level::DEBUG;
     LogFormatter::ptr formatter_;
+    bool hasFormatter_ = false;
 };
 
 class Logger : public std::enable_shared_from_this<Logger> {
+friend class LoggerManager;
 public:
     using ptr = std::shared_ptr<Logger>;
 
@@ -179,15 +190,22 @@ public:
     const std::string name() const { return name_; };
     LogLevel::Level level() const { return level_; }
     void set_level(LogLevel::Level level) { level_ = level; }
+    LogFormatter::ptr formatter();
+    void set_formatter(LogFormatter::ptr formatter);
+    void set_formatter(const std::string& formatter);
     void addAppender(LogAppender::ptr appender);
     void delAppender(LogAppender::ptr appender);
+    void clearAppenders();
     std::shared_ptr<Logger> getptr() { return shared_from_this(); }
 
+    const std::string toYAMLString() const;
 private:
     std::string name_;
     LogLevel::Level level_;
     LogFormatter::ptr formatter_;
     std::list<LogAppender::ptr> appenders_;
+
+    Logger::ptr root_;
 };
 
 class StdOutLogAppender : public LogAppender {
@@ -196,6 +214,8 @@ public:
 
     virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level,
                      LogEvent::ptr event) override;
+    
+    const std::string toYAMLString() const override;
 };
 
 class FileLogAppender : public LogAppender {
@@ -208,6 +228,7 @@ public:
                      LogEvent::ptr event) override;
     bool reopen();
 
+    const std::string toYAMLString() const override;
 private:
     std::string file_name_;
     std::ofstream file_stream_;
@@ -219,6 +240,9 @@ public:
     Logger::ptr logger(const std::string& name);
 
     Logger::ptr root() const { return root_; }
+    const std::string toYAMLString() const;
+private:
+    void init();
 
 private:
     Logger::ptr root_;

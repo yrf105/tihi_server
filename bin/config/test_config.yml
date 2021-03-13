@@ -2,14 +2,15 @@ logs:
   - name: root
     level: info
     formatter: "%d %m %n"
-    appender:
+    appenders:
       - type: FileLogAppender
         file: log.txt
+        formatter: "%d %m %n"
       - type: StdOutLogAppender
   - name: system
     level: info
     formatter: "%d [%p] %f:%l %m %n"
-    appender:
+    appenders:
       - type: StdOutLogAppender
 
 system:

@@ -1,11 +1,10 @@
 #include "config.h"
 
 namespace tihi {
-Config::ConfigVarMap Config::datas_;
 
 ConfigVarInterface::ptr Config::LookupInterface(const std::string& name) {
-    auto it = datas_.find(name);
-    return it == datas_.end() ? nullptr : it->second;
+    auto it = Datas().find(name);
+    return it == Datas().end() ? nullptr : it->second;
 }
 
 void ListAllMembers(const std::string& prefix, const YAML::Node& node,

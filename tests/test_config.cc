@@ -34,7 +34,7 @@ void print_yaml(const YAML::Node& node, int level) {
 }
 
 void test_yaml() {
-    YAML::Node root = YAML::LoadFile("../bin/config.yml");
+    YAML::Node root = YAML::LoadFile("../bin/config/test_config.yml");
 
     print_yaml(root, 0);
 }
@@ -101,7 +101,7 @@ void test_config() {
     XX_MAP(g_map_int_value_config, "system.map", "before");
     XX_MAP(g_umap_int_value_config, "system.umap", "before");
 
-    YAML::Node root = YAML::LoadFile("../bin/config.yml");
+    YAML::Node root = YAML::LoadFile("../bin/config/test_config.yml");
     tihi::Config::LoadFromYAML(root);
 
     TIHI_LOG_DEBUG(TIHI_LOG_ROOT())
@@ -202,7 +202,7 @@ void test_class() {
         << g_person->value().ToString();
     XX(g_person_map, "class.map", "before");
 
-    YAML::Node root = YAML::LoadFile("../bin/config.yml");
+    YAML::Node root = YAML::LoadFile("../bin/config/test_config.yml");
     tihi::Config::LoadFromYAML(root);
 
     TIHI_LOG_DEBUG(TIHI_LOG_ROOT()) << "after: " << g_person->toString() << "\n"
@@ -211,9 +211,24 @@ void test_class() {
 #undef XX
 }
 
+void test_log_config() {
+    std::cout << tihi::LoggerMgr::GetInstance()->toYAMLString() << std::endl;
+    YAML::Node root = YAML::LoadFile("../bin/config/logs.yml");
+    tihi::Config::LoadFromYAML(root);
+    std::cout << tihi::LoggerMgr::GetInstance()->toYAMLString() << std::endl;
+
+    tihi::Logger::ptr sys_logger = TIHI_LOG_LOGGER("system");
+    TIHI_LOG_FATAL(sys_logger) << "hello";
+    // std::cout << g_logger->toYAMLString();
+
+    sys_logger->set_formatter("%m%T%d%n");
+    TIHI_LOG_FATAL(sys_logger) << "world";
+}
+
 void test() {
     // test_config();
-    test_class();
+    // test_class();
+    test_log_config();
 }
 
 int main(int argc, char** argv) {

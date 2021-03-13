@@ -329,8 +329,8 @@ public:
 
     template <typename T>
     static typename ConfigVar<T>::ptr Lookup(const std::string& name) {
-        auto it = datas_.find(name);
-        if (it == datas_.end()) {
+        auto it = Datas().find(name);
+        if (it == Datas().end()) {
             return nullptr;
         }
 
@@ -346,8 +346,8 @@ public:
             throw(std::invalid_argument(name));
         }
 
-        auto ret = datas_.find(name);
-        if (ret != datas_.end()) {
+        auto ret = Datas().find(name);
+        if (ret != Datas().end()) {
             auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(ret->second);
             if (tmp) {
                 TIHI_LOG_ERROR(TIHI_LOG_ROOT()) << name << " have existed.";
@@ -362,7 +362,7 @@ public:
 
         typename ConfigVar<T>::ptr v(
             new ConfigVar<T>(name, default_val, description));
-        datas_[name] = v;
+        Datas()[name] = v;
         return v;
     }
 
@@ -370,7 +370,10 @@ public:
     static void LoadFromYAML(const YAML::Node& root);
 
 private:
-    static ConfigVarMap datas_;
+    static ConfigVarMap& Datas() {
+        static ConfigVarMap datas_;
+        return datas_;
+    }
 };
 
 }  // namespace tihi

@@ -1,0 +1,16 @@
+logs:
+  - name: root
+    level: INFO
+    formatter: "%d [%p] %m %n"
+    appenders:
+      - type: FileLogAppender
+        file: ../bin/logs/root.log.txt
+        formatter: "%d %m %n"
+      - type: StdOutLogAppender
+        # formatter: "%d %m %n"
+  - name: system
+    level: debug
+    formatter: "%d [%p] %f:%l %m %n"
+    appenders:
+      - type: StdOutLogAppender
+        # formatter: "%d %m %n"
