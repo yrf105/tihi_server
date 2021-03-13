@@ -28,11 +28,13 @@ link_directories(third_party/yaml-cpp/bulid)
 set(LIB_SRC
     tihi/log/log.cc
     tihi/utils/utils.cc
-    tihi/config/config.cc)
+    tihi/config/config.cc
+    tihi/thread/thread.cc)
 
 set(LIBS
     tihi
-    yaml-cpp)
+    yaml-cpp
+    pthread)
 
 # 生成动态库
 add_library(tihi SHARED ${LIB_SRC})
@@ -40,6 +42,7 @@ redefine_file_macro(tihi)
 
 tihi_add_executable(test "tests/test.cc" tihi "${LIBS}")
 tihi_add_executable(test_config "tests/test_config.cc" tihi "${LIBS}")
+tihi_add_executable(test_thread "tests/test_thread.cc" tihi "${LIBS}")
 # add_executable(test_config tests/test_config.cc)
 # add_dependencies(test_config tihi)
 # target_link_libraries(test_config tihi -L/home/wddxrw/myproject/tihi_server/third_party/yaml-cpp/bulid -lyaml-cpp)
