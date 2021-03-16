@@ -3,8 +3,10 @@
 namespace tihi {
 
 ConfigVarInterface::ptr Config::LookupInterface(const std::string& name) {
-    auto it = Datas().find(name);
-    return it == Datas().end() ? nullptr : it->second;
+    rwmutex_type::read_lock lock(Mutex_());
+
+    auto it = Datas_().find(name);
+    return it == Datas_().end() ? nullptr : it->second;
 }
 
 void ListAllMembers(const std::string& prefix, const YAML::Node& node,
@@ -65,5 +67,14 @@ void Config::LoadFromYAML(const YAML::Node& root) {
     }
 
 }
+
+void Config::Visit(std::function<void(ConfigVarInterface::ptr)> cb) {
+    rwmutex_type::read_lock lock(Mutex_());
+    ConfigVarMap& datas = Datas_();
+    for (auto& it : datas) {
+        cb(it.second);
+    }
+}
+
 
 }  // namespace tihi

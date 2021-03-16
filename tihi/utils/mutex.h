@@ -156,7 +156,7 @@ private:
 
 class NullMutex {
 public:
-    using null_mutex = ScopedLock<NullMutex>;
+    using mutex = ScopedLock<NullMutex>;
     NullMutex() {}
 
     ~NullMutex() {}

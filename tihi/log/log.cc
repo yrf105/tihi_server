@@ -87,13 +87,13 @@ LogEventWarp::~LogEventWarp() {
 std::stringstream& LogEventWarp::content() { return event_->content(); }
 
 LogFormatter::ptr LogAppender::formatter() {
-    mutex_type::read_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     return formatter_;
 }
 
 void LogAppender::set_formatter(LogFormatter::ptr val, bool from_logger) {
-    mutex_type::write_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     if (!from_logger) {
         hasFormatter_ = true;
@@ -113,7 +113,7 @@ Logger::Logger(const std::string& name) : name_(name), level_(LogLevel::DEBUG) {
 }
 
 void Logger::log(LogLevel::Level level, LogEvent::ptr event) {
-    mutex_type::read_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     if (level < level_) {
         return;
@@ -142,7 +142,7 @@ void Logger::fatal(LogEvent::ptr event) { log(LogLevel::FATAL, event); }
 LogFormatter::ptr Logger::formatter() { return formatter_; }
 
 void Logger::set_formatter(LogFormatter::ptr formatter) {
-    mutex_type::write_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     if (formatter->isError()) {
         return;
@@ -150,7 +150,7 @@ void Logger::set_formatter(LogFormatter::ptr formatter) {
     formatter_ = formatter;
     for (auto& ap : appenders_) {
         if (ap->hasFormatter()) {
-            continue ;
+            continue;
         }
         ap->set_formatter(formatter_, true);
     }
@@ -168,7 +168,7 @@ void Logger::set_formatter(const std::string& formatter) {
 }
 
 void Logger::addAppender(LogAppender::ptr appender) {
-    mutex_type::write_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     if (!appender->hasFormatter() && !appender->formatter()) {
         appender->set_formatter(formatter_, true);
@@ -177,7 +177,7 @@ void Logger::addAppender(LogAppender::ptr appender) {
 }
 
 void Logger::delAppender(LogAppender::ptr appender) {
-    mutex_type::write_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     for (auto it = appenders_.begin(); it != appenders_.end(); ++it) {
         if (*it == appender) {
@@ -188,13 +188,13 @@ void Logger::delAppender(LogAppender::ptr appender) {
 }
 
 void Logger::clearAppenders() {
-    mutex_type::write_lock lock(mutex_);
-    
+    mutex_type::mutex lock(mutex_);
+
     appenders_.clear();
 }
 
 const std::string Logger::toYAMLString() {
-    mutex_type::read_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     YAML::Node node;
     node["name"] = name_;
@@ -221,22 +221,24 @@ FileLogAppender::FileLogAppender(const std::string& filename)
 
 void FileLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level,
                           LogEvent::ptr event) {
-    mutex_type::write_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     if (level_ > level) {
         return;
     }
 
-    if (last_time_ != time(0)) {
-        reopen();
-        last_time_ = time(0);
-    }
+    // 定时重新打开日志文件，防止在写日志的过程中日志文件被删除
+    // uint64_t now = event->time();
+    // if (last_time_ > now + 5) {
+    //     reopen();
+    //     last_time_ = now;
+    // }
 
     file_stream_ << formatter_->format(logger, level, event);
 }
 
 bool FileLogAppender::reopen() {
-    mutex_type::write_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     if (file_stream_) {
         file_stream_.close();
@@ -248,7 +250,7 @@ bool FileLogAppender::reopen() {
 }
 
 const std::string FileLogAppender::toYAMLString() {
-    mutex_type::read_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     YAML::Node node;
     node["type"] = "FileLogAppender";
@@ -267,8 +269,8 @@ const std::string FileLogAppender::toYAMLString() {
 
 void StdOutLogAppender::log(std::shared_ptr<Logger> logger,
                             LogLevel::Level level, LogEvent::ptr event) {
-    mutex_type::write_lock lock(mutex_);
-    
+    mutex_type::mutex lock(mutex_);
+
     if (level_ > level) {
         return;
     }
@@ -277,7 +279,7 @@ void StdOutLogAppender::log(std::shared_ptr<Logger> logger,
 }
 
 const std::string StdOutLogAppender::toYAMLString() {
-    mutex_type::read_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     YAML::Node node;
     node["type"] = "StdOutLogAppender";
@@ -546,15 +548,15 @@ LoggerManager::LoggerManager() {
 
 Logger::ptr LoggerManager::logger(const std::string& name) {
     {
-        mutex_type::read_lock lock(mutex_);
-        
+        mutex_type::mutex lock(mutex_);
+
         auto it = loggers_.find(name);
         if (it != loggers_.end()) {
             return it->second;
         }
     }
-    
-    mutex_type::write_lock lock(mutex_);
+
+    mutex_type::mutex lock(mutex_);
 
     Logger::ptr logger(new Logger(name));
     logger->addAppender(StdOutLogAppender::ptr(new StdOutLogAppender));
@@ -563,12 +565,12 @@ Logger::ptr LoggerManager::logger(const std::string& name) {
 }
 
 const std::string LoggerManager::toYAMLString() {
-    mutex_type::read_lock lock(mutex_);
+    mutex_type::mutex lock(mutex_);
 
     YAML::Node node;
     for (auto& l : loggers_) {
         if (!l.second) {
-            continue ;
+            continue;
         }
         node.push_back(YAML::Load(l.second->toYAMLString()));
     }
@@ -716,46 +718,46 @@ ConfigVar<std::set<ConfigLogger>>::ptr g_logger_config =
 
 struct LogInit {
     LogInit() {
-        g_logger_config->addListener(
-            0, [](const std::set<ConfigLogger>& old_val,
-                  const std::set<ConfigLogger>& new_val) {
-                std::cout << "$ $ $ $ $ $ $ $ $ $ config logger!\n";
-                // 新的里面有，旧的里面没有，新增
-                // 或者
-                // 新的旧的里面都有，修改
-                for (auto& i : new_val) {
-                    auto logger = TIHI_LOG_LOGGER(i.name_);
-                    logger->set_level(i.level_);
-                    logger->clearAppenders();
-                    if (!i.formatter_.empty()) {
-                        logger->set_formatter(i.formatter_);
-                    }
-                    for (auto& a : i.appenders_) {
-                        LogAppender::ptr appender;
-                        if (a.type_ == 1) {
-                            appender.reset(new FileLogAppender(a.file_));
-                        } else if (a.type_ == 2) {
-                            appender.reset(new StdOutLogAppender);
-                        }
-                        appender->set_level(a.level_);
-                        if (!a.formatter_.empty()) {
-                            appender->set_formatter(
-                                LogFormatter::ptr(new LogFormatter(a.formatter_)), false);
-                        }
-                        logger->addAppender(LogAppender::ptr(appender));
-                    }
+        g_logger_config->addListener([](const std::set<ConfigLogger>& old_val,
+                                        const std::set<ConfigLogger>& new_val) {
+            std::cout << "$ $ $ $ $ $ $ $ $ $ config logger!\n";
+            // 新的里面有，旧的里面没有，新增
+            // 或者
+            // 新的旧的里面都有，修改
+            for (auto& i : new_val) {
+                auto logger = TIHI_LOG_LOGGER(i.name_);
+                logger->set_level(i.level_);
+                logger->clearAppenders();
+                if (!i.formatter_.empty()) {
+                    logger->set_formatter(i.formatter_);
                 }
+                for (auto& a : i.appenders_) {
+                    LogAppender::ptr appender;
+                    if (a.type_ == 1) {
+                        appender.reset(new FileLogAppender(a.file_));
+                    } else if (a.type_ == 2) {
+                        appender.reset(new StdOutLogAppender);
+                    }
+                    appender->set_level(a.level_);
+                    if (!a.formatter_.empty()) {
+                        appender->set_formatter(
+                            LogFormatter::ptr(new LogFormatter(a.formatter_)),
+                            false);
+                    }
+                    logger->addAppender(LogAppender::ptr(appender));
+                }
+            }
 
-                // 旧的里面有，新的里面没有，删除
-                for (auto& i : old_val) {
-                    auto it = new_val.find(i);
-                    if (it == new_val.end()) {
-                        auto logger = TIHI_LOG_LOGGER(i.name_);
-                        logger->set_level(LogLevel::Level(INT_MAX));
-                        logger->clearAppenders();
-                    }
+            // 旧的里面有，新的里面没有，删除
+            for (auto& i : old_val) {
+                auto it = new_val.find(i);
+                if (it == new_val.end()) {
+                    auto logger = TIHI_LOG_LOGGER(i.name_);
+                    logger->set_level(LogLevel::Level(INT_MAX));
+                    logger->clearAppenders();
                 }
-            });
+            }
+        });
     }
 };
 

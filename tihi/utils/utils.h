@@ -4,9 +4,14 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include <vector>
+#include <string>
+
 namespace tihi {
 pid_t ThreadId();
 uint32_t FiberId();
+void Backtrace(std::vector<std::string>& res, int offset, int size);
+std::string Backtrace(int offset, int size, const std::string& prefix = "");
 }  // namespace tihi
 
 #endif  // TIHI_UTILS_H_

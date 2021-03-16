@@ -29,6 +29,7 @@ set(LIB_SRC
     tihi/log/log.cc
     tihi/utils/utils.cc
     tihi/utils/noncopyable.cc
+    tihi/utils/macro.cc
     tihi/utils/mutex.cc
     tihi/config/config.cc
     tihi/thread/thread.cc)
@@ -45,6 +46,7 @@ redefine_file_macro(tihi)
 tihi_add_executable(test "tests/test.cc" tihi "${LIBS}")
 tihi_add_executable(test_config "tests/test_config.cc" tihi "${LIBS}")
 tihi_add_executable(test_thread "tests/test_thread.cc" tihi "${LIBS}")
+tihi_add_executable(test_macro "tests/test_macro.cc" tihi "${LIBS}")
 # add_executable(test_config tests/test_config.cc)
 # add_dependencies(test_config tihi)
 # target_link_libraries(test_config tihi -L/home/wddxrw/myproject/tihi_server/third_party/yaml-cpp/bulid -lyaml-cpp)

@@ -155,7 +155,7 @@ private:
 class LogAppender {
 public:
     using ptr = std::shared_ptr<LogAppender>;
-    using mutex_type = NullRWMutex;
+    using mutex_type = Mutex;
 
     virtual ~LogAppender(){};
 
@@ -182,7 +182,7 @@ class Logger : public std::enable_shared_from_this<Logger> {
 friend class LoggerManager;
 public:
     using ptr = std::shared_ptr<Logger>;
-    using mutex_type = NullRWMutex;
+    using mutex_type = Mutex;
 
     Logger(const std::string& name = "root");
 
@@ -240,12 +240,12 @@ private:
     std::string file_name_;
     std::ofstream file_stream_;
 
-    time_t last_time_ = 0;
+    uint64_t last_time_ = 0;
 };
 
 class LoggerManager {
 public:
-    using mutex_type = NullRWMutex;
+    using mutex_type = Mutex;
 
     LoggerManager();
     Logger::ptr logger(const std::string& name);

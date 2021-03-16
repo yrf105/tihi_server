@@ -180,8 +180,7 @@ tihi::ConfigVar<std::map<std::string, Person>>::ptr g_person_map =
         "class.map", {{"yue", Person()}}, "class map");
 
 void test_class() {
-    g_person->addListener(11, [](const Person& oldPerson,
-                                 const Person& newPerson) {
+    g_person->addListener([](const Person& oldPerson, const Person& newPerson) {
         TIHI_LOG_INFO(TIHI_LOG_ROOT()) << "old_val: " << oldPerson.ToString()
                                        << " new_val" << newPerson.ToString();
     });
@@ -223,7 +222,16 @@ void test_log_config() {
 
     sys_logger->set_formatter("%m%T%d%n");
     TIHI_LOG_FATAL(sys_logger) << "world";
+
+    tihi::Config::Visit([sys_logger](tihi::ConfigVarInterface::ptr var) {
+        TIHI_LOG_DEBUG(sys_logger)
+            << "name: " << var->name()
+            << " ======= description: " << var->description()
+            << " ======= value: " << var->toString();
+    });
 }
+
+void test_visit() {}
 
 void test() {
     // test_config();

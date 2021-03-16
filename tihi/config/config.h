@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "log/log.h"
+#include "utils/mutex.h"
 #include "yaml-cpp/yaml.h"
 
 namespace tihi {
@@ -32,6 +33,9 @@ public:
     virtual std::string toString() = 0;
     virtual bool formString(const std::string& v) = 0;
     virtual std::string typeID() const = 0;
+
+    const std::string& name() const { return name_; }
+    const std::string& description() const { return description_; }
 
 private:
     std::string name_;
@@ -253,8 +257,9 @@ template <typename T, typename FromStr = LexicalCast<std::string, T>,
 class ConfigVar : public ConfigVarInterface {
 public:
     using ptr = std::shared_ptr<ConfigVar>;
-    using on_change_cb = std::function<void (const T& old_val, const T& new_val)>;
-
+    using on_change_cb =
+        std::function<void(const T& old_val, const T& new_val)>;
+    using rwmutex_type = RWMutex;
 
     ConfigVar(std::string name, const T& default_val,
               const std::string& description)
@@ -285,52 +290,78 @@ public:
         return false;
     }
 
-    T value() const { return val_; }
+    T value() {
+        rwmutex_type::read_lock lock(mutex_);
+
+        return val_;
+    }
+
     void set_value(const T& v) {
-        if (val_ == v) {
-            return ;
+        {
+            rwmutex_type::read_lock lock(mutex_);
+
+            if (val_ == v) {
+                return;
+            }
+
+            for (auto& i : cbs_) {
+                i.second(val_, v);
+            }
         }
 
-        for (auto& i : cbs_) {
-            i.second(val_, v);
-        }
+        rwmutex_type::write_lock lock(mutex_);
 
         val_ = v;
     }
 
     std::string typeID() const override { return typeid(T).name(); }
 
-    void addListener(uint64_t key, on_change_cb val) {
+    uint64_t addListener(on_change_cb val) {
+        static uint64_t key = 0;
+
+        rwmutex_type::write_lock lock(mutex_);
+
+        ++key;
         cbs_[key] = val;
+        return key;
     }
 
     void delListener(uint64_t key) {
+        rwmutex_type::write_lock lock(mutex_);
+
         cbs_.erase(key);
     }
 
     on_change_cb listener(uint64_t key) {
+        rwmutex_type::read_lock lock(mutex_);
+
         auto ret = cbs_.find(key);
         return ret == cbs_.end() ? nullptr : ret->second;
     }
 
     void clearListener() {
+        rwmutex_type::write_lock lock(mutex_);
+
         cbs_.clear();
     }
 
 private:
     T val_;
     std::map<uint64_t, on_change_cb> cbs_;
+    rwmutex_type mutex_;
 };
 
 class Config {
 public:
     using ConfigVarMap =
         std::unordered_map<std::string, ConfigVarInterface::ptr>;
+    using rwmutex_type = RWMutex;
 
     template <typename T>
     static typename ConfigVar<T>::ptr Lookup(const std::string& name) {
-        auto it = Datas().find(name);
-        if (it == Datas().end()) {
+        rwmutex_type::read_lock lock(Mutex_());
+        auto it = Datas_().find(name);
+        if (it == Datas_().end()) {
             return nullptr;
         }
 
@@ -346,8 +377,10 @@ public:
             throw(std::invalid_argument(name));
         }
 
-        auto ret = Datas().find(name);
-        if (ret != Datas().end()) {
+        rwmutex_type::write_lock lock(Mutex_());
+
+        auto ret = Datas_().find(name);
+        if (ret != Datas_().end()) {
             auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(ret->second);
             if (tmp) {
                 TIHI_LOG_ERROR(TIHI_LOG_ROOT()) << name << " have existed.";
@@ -362,17 +395,30 @@ public:
 
         typename ConfigVar<T>::ptr v(
             new ConfigVar<T>(name, default_val, description));
-        Datas()[name] = v;
+        Datas_()[name] = v;
         return v;
     }
 
     static ConfigVarInterface::ptr LookupInterface(const std::string& name);
     static void LoadFromYAML(const YAML::Node& root);
+    static void Visit(std::function<void(ConfigVarInterface::ptr)> cb);
 
 private:
-    static ConfigVarMap& Datas() {
+
+    /*
+    全局对象的创建没有严格的先后顺序
+    而程序通过创建全局对象，进而调用全局对象的构造函数，来完成在 main 函数执行前完成配置
+    所以通过此方法可以避免在全局函数操作 datas_ 静态变量时，datas_ 还没有完成初始化
+    */
+    static ConfigVarMap& Datas_() {
         static ConfigVarMap datas_;
         return datas_;
+    }
+
+
+    static rwmutex_type& Mutex_() {
+        static rwmutex_type mutex_;
+        return mutex_;
     }
 };
 
