@@ -12,7 +12,8 @@ namespace tihi {
 
 LogEvent::LogEvent(uint64_t time, uint32_t elapse, const char* file,
                    uint32_t line, uint32_t threadId, uint32_t fiberId,
-                   std::shared_ptr<Logger> logger, LogLevel::Level level)
+                   std::shared_ptr<Logger> logger, LogLevel::Level level,
+                   const std::string& thread_name)
     : time_(time),
       elapse_(elapse),
       kFile_(file),
@@ -20,7 +21,8 @@ LogEvent::LogEvent(uint64_t time, uint32_t elapse, const char* file,
       threadId_(threadId),
       fiberId_(fiberId),
       logger_(logger),
-      level_(level) {}
+      level_(level),
+      thread_name_(thread_name) {}
 
 const char* LogLevel::ToString(LogLevel::Level level) {
     switch (level) {
@@ -109,7 +111,7 @@ Logger::Logger(const std::string& name) : name_(name), level_(LogLevel::DEBUG) {
     logger_name   %c
     */
     formatter_.reset(new LogFormatter(
-        "[%d{%Y-%m-%d %H:%M:%S}] %t %F [%p] [%c] %f:%l %m %n"));
+        "[%d{%Y-%m-%d %H:%M:%S}] %t %N %F [%p] [%c] %f:%l %m %n"));
 }
 
 void Logger::log(LogLevel::Level level, LogEvent::ptr event) {
@@ -357,6 +359,15 @@ public:
     }
 };
 
+class ThreadNameFormatIterm : public LogFormatter::FormatItem {
+public:
+    ThreadNameFormatIterm(const std::string& fmt = "") : FormatItem(fmt) {}
+    void format(std::ostream& os, std::shared_ptr<Logger> logger,
+                LogLevel::Level level, LogEvent::ptr event) override {
+        os << event->thread_name();
+    }
+};
+
 class FiberIdFormatIterm : public LogFormatter::FormatItem {
 public:
     FiberIdFormatIterm(const std::string& fmt = "") : FormatItem(fmt) {}
@@ -450,7 +461,7 @@ void LogFormatter::init() {
             XX(l, LineFormatIterm),    XX(t, ThreadIdFormatIterm),
             XX(F, FiberIdFormatIterm), XX(n, EnterFormatIterm),
             XX(p, LevelFormatItem),    XX(c, NameFormatIterm),
-            XX(T, TabFormatIterm),
+            XX(T, TabFormatIterm),     XX(N, ThreadNameFormatIterm),
 #undef XX
         };
 
@@ -458,7 +469,7 @@ void LogFormatter::init() {
     time_         %d | elapse_      %r | kFile_      %f
     line_         %l | threadId_    %t | level       %p
     fiberId_      %F | content_     %m | enter       %n
-    logger_name   %c | Table        %T |
+    logger_name   %c | Table        %T | thread_name %N
     */
     for (auto& t : vec) {
         if (std::get<2>(t) == 0) {

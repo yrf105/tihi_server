@@ -34,7 +34,7 @@ Thread::~Thread() {
 
 Thread* Thread::This() { return t_thread; }
 
-const std::string Thread::Name() { return t_thread_name; }
+const std::string& Thread::Name() { return t_thread_name; }
 
 void Thread::SetName(const std::string& name) {
     if (t_thread) {

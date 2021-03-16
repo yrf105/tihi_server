@@ -25,7 +25,7 @@ public:
 
 
     static Thread* This();
-    static const std::string Name();
+    static const std::string& Name();
     static void SetName(const std::string& name);
 
     void join();

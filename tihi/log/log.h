@@ -6,22 +6,24 @@
 
 #include <fstream>
 #include <list>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <tuple>
 #include <vector>
-#include <map>
 
+#include "thread/thread.h"
+#include "utils/mutex.h"
 #include "utils/singleton.h"
 #include "utils/utils.h"
-#include "utils/mutex.h"
 
-#define TIHI_LOG_LEVEL(logger, grade)                                        \
-    if (logger->level() <= grade)                                            \
-    tihi::LogEventWarp(tihi::LogEvent::ptr(new tihi::LogEvent(               \
-                           time(0), 0, __FILE__, __LINE__, tihi::ThreadId(), \
-                           tihi::FiberId(), logger, grade)))                 \
+#define TIHI_LOG_LEVEL(logger, grade)                                          \
+    if (logger->level() <= grade)                                              \
+    tihi::LogEventWarp(                                                        \
+        tihi::LogEvent::ptr(new tihi::LogEvent(                                \
+            time(0), 0, __FILE__, __LINE__, tihi::ThreadId(), tihi::FiberId(), \
+            logger, grade, tihi::Thread::Name())))                             \
         .content()
 
 #define TIHI_LOG_DEBUG(logger) TIHI_LOG_LEVEL(logger, tihi::LogLevel::DEBUG)
@@ -30,12 +32,13 @@
 #define TIHI_LOG_ERROR(logger) TIHI_LOG_LEVEL(logger, tihi::LogLevel::ERROR)
 #define TIHI_LOG_FATAL(logger) TIHI_LOG_LEVEL(logger, tihi::LogLevel::FATAL)
 
-#define TIHI_LOG_FMT_LEVEL(logger, grade, fmt, ...)                          \
-    if (logger->level() <= grade)                                            \
-    tihi::LogEventWarp(tihi::LogEvent::ptr(new tihi::LogEvent(               \
-                           time(0), 0, __FILE__, __LINE__, tihi::ThreadId(), \
-                           tihi::FiberId(), logger, grade)))                 \
-        .event()                                                             \
+#define TIHI_LOG_FMT_LEVEL(logger, grade, fmt, ...)                            \
+    if (logger->level() <= grade)                                              \
+    tihi::LogEventWarp(                                                        \
+        tihi::LogEvent::ptr(new tihi::LogEvent(                                \
+            time(0), 0, __FILE__, __LINE__, tihi::ThreadId(), tihi::FiberId(), \
+            logger, grade, tihi::Thread::Name())))                             \
+        .event()                                                               \
         ->format(fmt, __VA_ARGS__)
 
 #define TIHI_LOG_FMT_DEBUG(logger, fmt, ...) \
@@ -77,7 +80,8 @@ public:
     using ptr = std::shared_ptr<LogEvent>;
     LogEvent(uint64_t time, uint32_t elapse, const char* file, uint32_t line,
              uint32_t threadId, uint32_t fiberId,
-             std::shared_ptr<Logger> logger, LogLevel::Level level);
+             std::shared_ptr<Logger> logger, LogLevel::Level level,
+             const std::string& thread_name);
 
     uint64_t time() const { return time_; }
     uint32_t elapse() const { return elapse_; }
@@ -89,6 +93,7 @@ public:
     std::stringstream& content() { return content_; }
     std::shared_ptr<Logger> logger() const { return logger_; }
     LogLevel::Level level() const { return level_; }
+    const std::string& thread_name() const { return thread_name_; }
 
     void format(const char* fmt, ...);
     void format(const char* fmt, va_list vl);
@@ -104,6 +109,8 @@ private:
 
     std::shared_ptr<Logger> logger_;
     LogLevel::Level level_;
+
+    std::string thread_name_;
 };
 
 class LogEventWarp {
@@ -145,6 +152,7 @@ public:
     void init();
     bool pattern_parser(
         std::vector<std::tuple<std::string, std::string, int>>& vec);
+
 private:
     std::string pattern_;
     std::vector<FormatItem::ptr> items_;
@@ -179,7 +187,8 @@ protected:
 };
 
 class Logger : public std::enable_shared_from_this<Logger> {
-friend class LoggerManager;
+    friend class LoggerManager;
+
 public:
     using ptr = std::shared_ptr<Logger>;
     using mutex_type = Mutex;
@@ -204,6 +213,7 @@ public:
     std::shared_ptr<Logger> getptr() { return shared_from_this(); }
 
     const std::string toYAMLString();
+
 private:
     std::string name_;
     LogLevel::Level level_;
@@ -221,7 +231,7 @@ public:
 
     virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level,
                      LogEvent::ptr event) override;
-    
+
     const std::string toYAMLString() override;
 };
 
@@ -236,6 +246,7 @@ public:
     bool reopen();
 
     const std::string toYAMLString() override;
+
 private:
     std::string file_name_;
     std::ofstream file_stream_;
@@ -252,6 +263,7 @@ public:
 
     Logger::ptr root() const { return root_; }
     const std::string toYAMLString();
+
 private:
     void init();
 

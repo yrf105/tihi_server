@@ -4,6 +4,7 @@
 #include <execinfo.h>
 
 #include "log/log.h"
+#include "fiber/fiber.h"
 
 namespace tihi {
 
@@ -19,7 +20,7 @@ pid_t ThreadId() {
 }
 
 uint32_t FiberId() {
-    return 0;
+    return Fiber::FiberId();
 }
 
 void Backtrace(std::vector<std::string>& res, int offset, int size) {

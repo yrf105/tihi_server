@@ -6,6 +6,9 @@
 #include <functional>
 #include <memory>
 
+namespace tihi {
+
+
 class Fiber : public std::enable_shared_from_this<Fiber> {
 public:
     using ptr = std::shared_ptr<Fiber>;
@@ -16,6 +19,7 @@ public:
         EXEC = 2,
         HOLD = 3,
         TERM = 4,
+        EXCEP = 5,  // 相当于 TERM，只不过是异常终止
     };
 
 private:
@@ -32,6 +36,7 @@ public:
     Fiber(std::function<void()> cb, size_t stack_size = 0);
     ~Fiber();
 
+    uint64_t id() const { return id_; }
     /*
     改变当前协程的执行函数，必须处于 INIT（未开始执行） 或者 TERM（执行完毕）
     状态
@@ -46,24 +51,33 @@ public:
     */
     void swapOut();
 
-    static ptr SetThis(Fiber* fiber);
+    static void SetThis(Fiber* fiber);
     static ptr This();
+    /*
+    当前协程（子协程）让出线程资源，切换到其他协程（主协程），并将状态设置为 READY
+    */
     static void YieldToReady();
+    /*
+    当前协程（子协程）让出线程资源，切换到其他协程（主协程），并将状态设置为 HOLD
+    */
     static void YieldToHold();
     // 总的协程数
     static uint64_t TotalFiberCounts();
+    static uint64_t FiberId();
 
     static void MainFunc();
 
 private:
     uint64_t id_;
-    uint32_t stack_size_;
+    uint32_t stack_size_ = 0;
     State state_ = INIT;
 
     ucontext_t context_;
-    void* stack_;
+    void* stack_ = nullptr;
 
     std::function<void()> cb_;
 };
+
+};  // namespace tihi
 
 #endif  // TIHI_FIBER_FIBER_H_
