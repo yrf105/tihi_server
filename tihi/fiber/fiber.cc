@@ -3,6 +3,7 @@
 #include <atomic>
 
 #include "config/config.h"
+#include "scheduler/scheduler.h"
 #include "utils/macro.h"
 
 namespace tihi {
@@ -41,7 +42,7 @@ Fiber::Fiber() {
     ++s_total_fiber_counts;
 }
 
-Fiber::Fiber(std::function<void()> cb, size_t stack_size)
+Fiber::Fiber(std::function<void()> cb, size_t stack_size, bool use_caller)
     : id_(++s_fiber_id), cb_(cb) {
     ++s_total_fiber_counts;
 
@@ -53,7 +54,11 @@ Fiber::Fiber(std::function<void()> cb, size_t stack_size)
     context_.uc_stack.ss_size = stack_size_;
     context_.uc_link = nullptr;
 
-    makecontext(&context_, Fiber::MainFunc, 0);
+    if (!use_caller) {
+        makecontext(&context_, Fiber::MainFunc, 0);
+    } else {
+        makecontext(&context_, Fiber::CallerMainFunc, 0);
+    }
 }
 
 Fiber::~Fiber() {
@@ -63,7 +68,8 @@ Fiber::~Fiber() {
         /*
         子协程的析构在主协程中完成
         */
-        TIHI_LOG_DEBUG(g_sys_logger) << "sub-fiber destruct";
+        TIHI_LOG_DEBUG(g_sys_logger)
+            << "sub-fiber: " << id() << " destruct in master-fiber";
     } else {
         // 主协程退出了
         TIHI_ASSERT((!cb_));
@@ -80,7 +86,7 @@ Fiber::~Fiber() {
         /*
         主协程的析构在没有任何协程执行时（所有子协程结束执行，主协程也结束执行）完成
         */
-        TIHI_LOG_DEBUG(g_sys_logger) << "master-fiber destruct";
+        TIHI_LOG_DEBUG(g_sys_logger) << "master-fiber: " << id() << " destruct";
     }
     --s_total_fiber_counts;
 }
@@ -104,13 +110,29 @@ void Fiber::swapIn() {
 
     SetThis(this);
 
+    TIHI_ASSERT2(
+        (0 == swapcontext(&(Scheduler::MainFiber()->context_), &context_)),
+        "swapcontext");
+}
+
+void Fiber::swapOut() {
+    SetThis(Scheduler::MainFiber());
+
+    TIHI_ASSERT2(
+        (0 == swapcontext(&context_, &(Scheduler::MainFiber()->context_))),
+        "swapcontext");
+}
+
+void Fiber::call() {
+    state_ = EXEC;
+    SetThis(this);
     TIHI_ASSERT2((0 == swapcontext(&(t_threadFiber->context_), &context_)),
                  "swapcontext");
 }
 
-void Fiber::swapOut() {
-    /*就是 swapIn 的反向操作，具体状态切换交给调用者设置*/
+void Fiber::back() {
     SetThis(t_threadFiber.get());
+
     TIHI_ASSERT2((0 == swapcontext(&context_, &(t_threadFiber->context_))),
                  "swapcontext");
 }
@@ -170,6 +192,29 @@ void Fiber::MainFunc() {
     Fiber* raw_ptr = curr.get();
     curr.reset();
     raw_ptr->swapOut();
+
+    /*
+    子协程结束运行并返回到主协程执行析构，就不会再回到这里了
+    */
+    TIHI_ASSERT2(false, "sub-fiber: never reach!!!");
+}
+
+void Fiber::CallerMainFunc() {
+    Fiber::ptr curr = This();
+    try {
+        curr->cb_();
+        curr->cb_ = nullptr;
+        curr->state_ = TERM;
+    } catch (std::exception& ex) {
+        curr->state_ = EXCEP;
+        TIHI_LOG_FATAL(g_sys_logger) << "Fiber Exception " << ex.what();
+    } catch (...) {
+        curr->state_ = EXCEP;
+        TIHI_LOG_FATAL(g_sys_logger) << "Fiber Exception";
+    }
+    Fiber* raw_ptr = curr.get();
+    curr.reset();
+    raw_ptr->back();
 
     /*
     子协程结束运行并返回到主协程执行析构，就不会再回到这里了

@@ -111,7 +111,7 @@ Logger::Logger(const std::string& name) : name_(name), level_(LogLevel::DEBUG) {
     logger_name   %c
     */
     formatter_.reset(new LogFormatter(
-        "[%d{%Y-%m-%d %H:%M:%S}] %t %N %F [%p] [%c] %f:%l %m %n"));
+        "[%d{%Y-%m-%d %H:%M:%S}] %t%T%F [%p]%T[%c]  %T%f:%l%T%m %n"));
 }
 
 void Logger::log(LogLevel::Level level, LogEvent::ptr event) {

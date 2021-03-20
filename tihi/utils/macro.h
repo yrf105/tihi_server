@@ -8,7 +8,7 @@
 
 #define TIHI_ASSERT(expr)                                              \
     do {                                                               \
-        if (!expr) {                                                   \
+        if (!(expr)) {                                                   \
             TIHI_LOG_FATAL(TIHI_LOG_ROOT())                            \
                 << "\nbacktrace: " << tihi::Backtrace(0, 100, "    "); \
             assert(expr);                                              \
@@ -17,7 +17,7 @@
 
 #define TIHI_ASSERT2(expr, msg)                                                \
     do {                                                                       \
-        if (!expr) {                                                           \
+        if (!(expr)) {                                                           \
             TIHI_LOG_FATAL(TIHI_LOG_ROOT())                                    \
                 << msg << " \nbacktrace: " << tihi::Backtrace(0, 100, "    "); \
             assert(expr);                                                      \

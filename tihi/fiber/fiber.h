@@ -8,7 +8,6 @@
 
 namespace tihi {
 
-
 class Fiber : public std::enable_shared_from_this<Fiber> {
 public:
     using ptr = std::shared_ptr<Fiber>;
@@ -33,10 +32,12 @@ public:
     制作一个新的协程，需要分配新的栈空间和指定执行函数，
     若成功，将在新的栈上执行指定函数，不会返回
     */
-    Fiber(std::function<void()> cb, size_t stack_size = 0);
+    Fiber(std::function<void()> cb, size_t stack_size = 0, bool use_caller = false);
     ~Fiber();
 
     uint64_t id() const { return id_; }
+    Fiber::State state() const { return state_; }
+    void set_state(Fiber::State state)  { state_ = state; }
     /*
     改变当前协程的执行函数，必须处于 INIT（未开始执行） 或者 TERM（执行完毕）
     状态
@@ -50,6 +51,9 @@ public:
     当前协程（子协程）让出线程资源，切换到其他协程（主协程）
     */
     void swapOut();
+
+    void call();
+    void back();
 
     static void SetThis(Fiber* fiber);
     static ptr This();
@@ -66,6 +70,7 @@ public:
     static uint64_t FiberId();
 
     static void MainFunc();
+    static void CallerMainFunc();
 
 private:
     uint64_t id_;
