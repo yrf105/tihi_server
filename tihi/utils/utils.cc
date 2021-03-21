@@ -53,4 +53,16 @@ std::string Backtrace(int offset, int size, const std::string& prefix) {
     return ss.str();
 }
 
+uint64_t MS() {
+    timeval tv;
+    ::gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
+uint64_t US() {
+    timeval tv;
+    ::gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000 * 1000 + tv.tv_usec;
+}
+
 } // namespace tihi

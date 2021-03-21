@@ -61,11 +61,12 @@ public:
 
 protected:
     virtual void tickle();
-    virtual void run();
+    void run();
     virtual bool stopping();
     virtual void idle();
     void set_this();
 
+    bool hasIdleThread() { return idle_thread_count_ > 0; }
 private:
     template <typename F>
     bool scheduleNoLock(F fc, pid_t thread_id) {

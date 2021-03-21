@@ -34,7 +34,9 @@ set(LIB_SRC
     tihi/utils/mutex.cc
     tihi/config/config.cc
     tihi/scheduler/scheduler.cc
-    tihi/thread/thread.cc)
+    tihi/iomanager/iomanager.cc
+    tihi/thread/thread.cc
+    tihi/timer/timer.cc)
 
 set(LIBS
     tihi
@@ -51,6 +53,7 @@ tihi_add_executable(test_thread "tests/test_thread.cc" tihi "${LIBS}")
 tihi_add_executable(test_macro "tests/test_macro.cc" tihi "${LIBS}")
 tihi_add_executable(test_fiber "tests/test_fiber.cc" tihi "${LIBS}")
 tihi_add_executable(test_scheduler "tests/test_scheduler.cc" tihi "${LIBS}")
+tihi_add_executable(test_iomanager "tests/test_iomanager.cc" tihi "${LIBS}")
 # add_executable(test_config tests/test_config.cc)
 # add_dependencies(test_config tihi)
 # target_link_libraries(test_config tihi -L/home/wddxrw/myproject/tihi_server/third_party/yaml-cpp/bulid -lyaml-cpp)
