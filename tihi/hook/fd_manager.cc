@@ -61,6 +61,9 @@ bool FdCtx::init() {
         is_socket_ = S_ISSOCK(fd_state.st_mode);
     }
 
+    /**
+     * 如果是 socket fd 则设置系统 非阻塞
+    */
     if (is_socket()) {
         int flag = fcntl_f(fd_, F_GETFL, 0);
         if (!(flag & O_NONBLOCK)) {
@@ -83,7 +86,7 @@ void FdCtx::close() {
 }
 
 FdManager::FdManager() {
-    // fds_.resize(32);
+    fds_.resize(32);
 }
 
 FdCtx::ptr FdManager::fd(int fd, bool auto_create) {

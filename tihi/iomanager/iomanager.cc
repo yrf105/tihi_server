@@ -13,6 +13,19 @@ static Logger::ptr g_sys_logger = TIHI_LOG_LOGGER("system");
 
 void IOManager::Event::triggerEvent(IOManager::EventType type) {
     TIHI_ASSERT((types_ & type));
+    /**
+     * 事件触发后需要将对应的事件取消掉，否则会有 errno: 2 - No such file or
+     * directory 的 bug 出现，原因是：假设一个 fd 上只有一个读事件，由本文件的
+     * 377 - 380 行可知， 读事件触发后，此 fd 会从 epoll
+     * 实例中删除（这是合理的，因为此 fd 上没有事件了）。 如果仅仅在 epoll
+     * 实例中删除而不将 types_ 上的相应事件类型清除掉（即此处做的事情）
+     * 当又有代码在此文件描述符上添加事件时（即执行
+     * addEvent），就会发出上面提到的错误， 由 addEvent 函数可知我们在 epoll_ctl
+     * 中执行的动作由 types_ 决定，若没有清除之前的 事件，却又在 epoll
+     * 实例中将其对应的文件描述符清除掉，这里就会在一个不在 epoll 实例中的
+     * 文件描述符上执行 EPOLL_CTL_MOD 操作，由此就会引发 errno 2
+     */
+    types_ = static_cast<EventType>(types_ & ~type);
     EventContext& ectx = event_context(type);
     if (ectx.cb_) {
         ectx.scheduler_->schedule(&(ectx.cb_));
@@ -108,8 +121,6 @@ int IOManager::addEvent(int fd, EventType type, std::function<void()> cb) {
     memset(&epevent, 0, sizeof(epevent));
     epevent.data.ptr = event;
     epevent.events = event->types_ | EPOLLET | type;
-    // int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
-    // TIHI_ASSERT(ret == 0);
     int rt = epoll_ctl(epfd_, op, fd, &epevent);
     if (rt) {
         TIHI_LOG_ERROR(g_sys_logger)
@@ -326,7 +337,7 @@ void IOManager::idle() {
 
         /**
          * 将所有超时任务加入任务队列
-        */
+         */
         std::vector<std::function<void()>> cbs;
         expiredTimerCb(cbs);
         if (!cbs.empty()) {
