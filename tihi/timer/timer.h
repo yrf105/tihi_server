@@ -68,7 +68,7 @@ private:
     std::set<Timer::ptr, Timer::Cmp> timers_;
     rwmutex_type mutex_;
     bool tickled_ = false;
-    uint64_t previouseTime = 0;
+    uint64_t previouseTime = MS();
 };
 
 }  // namespace tihi

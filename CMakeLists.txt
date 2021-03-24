@@ -36,12 +36,15 @@ set(LIB_SRC
     tihi/scheduler/scheduler.cc
     tihi/iomanager/iomanager.cc
     tihi/thread/thread.cc
-    tihi/timer/timer.cc)
+    tihi/timer/timer.cc
+    tihi/hook/hook.cc
+    tihi/hook/fd_manager.cc)
 
 set(LIBS
     tihi
     yaml-cpp
-    pthread)
+    pthread
+    dl)
 
 # 生成动态库
 add_library(tihi SHARED ${LIB_SRC})
@@ -54,6 +57,7 @@ tihi_add_executable(test_macro "tests/test_macro.cc" tihi "${LIBS}")
 tihi_add_executable(test_fiber "tests/test_fiber.cc" tihi "${LIBS}")
 tihi_add_executable(test_scheduler "tests/test_scheduler.cc" tihi "${LIBS}")
 tihi_add_executable(test_iomanager "tests/test_iomanager.cc" tihi "${LIBS}")
+tihi_add_executable(test_hook "tests/test_hook.cc" tihi "${LIBS}")
 # add_executable(test_config tests/test_config.cc)
 # add_dependencies(test_config tihi)
 # target_link_libraries(test_config tihi -L/home/wddxrw/myproject/tihi_server/third_party/yaml-cpp/bulid -lyaml-cpp)

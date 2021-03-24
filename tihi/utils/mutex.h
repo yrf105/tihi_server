@@ -101,7 +101,7 @@ private:
     bool locked_ = false;
 };
 
-class RWMutex {
+class RWMutex : public Noncopyable {
 public:
     using read_lock = ScopedReadLock<RWMutex>;
     using write_lock = ScopedWriteLock<RWMutex>;
@@ -120,7 +120,7 @@ private:
     pthread_rwlock_t rwlock_;
 };
 
-class NullRWMutex {
+class NullRWMutex : public Noncopyable {
 public:
     using read_lock = ScopedReadLock<NullRWMutex>;
     using write_lock = ScopedWriteLock<NullRWMutex>;
@@ -139,7 +139,7 @@ private:
     pthread_rwlock_t rwlock_;
 };
 
-class Mutex {
+class Mutex : public Noncopyable {
 public:
     using mutex = ScopedLock<Mutex>;
     Mutex() { pthread_mutex_init(&mutex_, nullptr); }
@@ -154,7 +154,7 @@ private:
     pthread_mutex_t mutex_;
 };
 
-class NullMutex {
+class NullMutex : public Noncopyable {
 public:
     using mutex = ScopedLock<NullMutex>;
     NullMutex() {}
@@ -166,7 +166,7 @@ public:
     void unlock() {}
 };
 
-class SpinLock {
+class SpinLock : public Noncopyable {
 public:
     using spinlock = ScopedLock<SpinLock>;
 
@@ -191,7 +191,7 @@ private:
 
 };
 
-class CASLock {
+class CASLock : public Noncopyable {
 public:
     using cas_lock = ScopedLock<CASLock>;
 

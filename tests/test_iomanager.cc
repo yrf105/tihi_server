@@ -35,7 +35,7 @@ void my_test() {
 
 tihi::Timer::ptr timer;
 void test_timer() {
-    tihi::IOManager iom(2);
+    tihi::IOManager iom(1, false);
     timer = iom.addTimer(3000, [](){
         TIHI_LOG_INFO(g_logger) << "hello timer";
         timer->cancel();

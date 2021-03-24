@@ -1,5 +1,6 @@
 #include "scheduler.h"
 
+#include "hook/hook.h"
 #include "log/log.h"
 #include "utils/macro.h"
 
@@ -9,21 +10,25 @@ static Logger::ptr g_sys_logger = TIHI_LOG_LOGGER("system");
 
 /**/
 static thread_local Scheduler* t_scheduler = nullptr;
-static thread_local Fiber* t_fiber = nullptr;
+static thread_local Fiber* t_scheduler_fiber = nullptr;
 
 Scheduler::Scheduler(size_t threads, bool use_caller, const std::string& name)
     : name_(name) {
+    TIHI_ASSERT((threads > 0));
+
     if (use_caller) {
         /*初始化主协程*/
         Fiber::This();
         /*当前线程参与调度，需要新创建的线程数 -1*/
         --threads;
         /*当前线程没有调度器*/
-        TIHI_ASSERT((nullptr == t_scheduler));
+        TIHI_ASSERT((nullptr == This()));
         t_scheduler = this;
         /*再创建一个真正做事的协程做主协程*/
+        /*编译器不会将成员函数隐式转换为函数指针，所以这里不能写 Scheduler::run
+         * 只能写 &Scheduler::run*/
         root_fiber_.reset(new Fiber(std::bind(&Scheduler::run, this), 0, true));
-        t_fiber = root_fiber_.get();
+        t_scheduler_fiber = root_fiber_.get();
 
         Thread::SetName(name_);
         root_thread_id_ = ThreadId();
@@ -43,7 +48,7 @@ Scheduler::~Scheduler() {
 
 Scheduler* Scheduler::This() { return t_scheduler; }
 
-Fiber* Scheduler::MainFiber() { return t_fiber; }
+Fiber* Scheduler::MainFiber() { return t_scheduler_fiber; }
 
 void Scheduler::start() {
     mutex_type::mutex lock(mutex_);
@@ -54,15 +59,14 @@ void Scheduler::start() {
     TIHI_ASSERT((threads_.empty()));
     threads_.resize(thread_count_);
     for (size_t i = 0; i < thread_count_; ++i) {
-        threads_[i].reset(
-            new Thread(std::bind(&Scheduler::run, this), name_ + "_" + std::to_string(i)));
+        threads_[i].reset(new Thread(std::bind(&Scheduler::run, this),
+                                     name_ + "_" + std::to_string(i)));
         thread_ids_.push_back(threads_[i]->id());
     }
     lock.unlock();
 }
 
 void Scheduler::stop() {
-
     auto_stop_ = true;
 
     /*
@@ -114,10 +118,11 @@ void Scheduler::stop() {
 
     if (root_fiber_) {
         // while (!stopping()) {
-        //     if (root_fiber_->state() == Fiber::TERM || root_fiber_->state() == Fiber::EXCEP) {
-        //         root_fiber_.reset(new Fiber(std::bind(&Scheduler::run, this), 0, true));
-        //         TIHI_LOG_INFO(g_sys_logger) << "scheduler restart";
-        //         t_fiber = root_fiber_.get();
+        //     if (root_fiber_->state() == Fiber::TERM || root_fiber_->state()
+        //     == Fiber::EXCEP) {
+        //         root_fiber_.reset(new Fiber(std::bind(&Scheduler::run, this),
+        //         0, true)); TIHI_LOG_INFO(g_sys_logger) << "scheduler
+        //         restart"; t_fiber = root_fiber_.get();
         //     }
         //     root_fiber_->call();
         // }
@@ -137,9 +142,8 @@ void Scheduler::stop() {
 }
 
 void Scheduler::run() {
-
     TIHI_LOG_INFO(g_sys_logger) << "run";
-
+    tihi::set_hook_enable(true);
     /**
      * 告诉当前线程，调度器是谁
      */
@@ -149,7 +153,7 @@ void Scheduler::run() {
      * 如果当前线程不是创建线程调度器的协程，则为当前线程创建主协程
      */
     if (root_thread_id_ != ThreadId()) {
-        t_fiber = Fiber::This().get();
+        t_scheduler_fiber = Fiber::This().get();
     }
 
     Fiber::ptr idle_fiber(new Fiber(std::bind(&Scheduler::idle, this)));
@@ -187,9 +191,9 @@ void Scheduler::run() {
             tickle();
 
             /**
-             * 这里不能直接走，对于线程来说虽然当前的任务（Fiber or Function）自己不能
-             * 执行但是自己应该去执行 idle
-            */
+             * 这里不能直接走，对于线程来说虽然当前的任务（Fiber or
+             * Function）自己不能 执行但是自己应该去执行 idle
+             */
             // continue ;
         }
 
@@ -239,20 +243,20 @@ void Scheduler::run() {
             ++idle_thread_count_;
             idle_fiber->swapIn();
             --idle_thread_count_;
-            if (idle_fiber->state() != Fiber::TERM && idle_fiber->state() != Fiber::EXCEP) {
+            if (idle_fiber->state() != Fiber::TERM &&
+                idle_fiber->state() != Fiber::EXCEP) {
                 idle_fiber->set_state(Fiber::HOLD);
             }
         }
     }
 }
 
-void Scheduler::tickle() {
-    TIHI_LOG_INFO(g_sys_logger) << "tickle";
-}
+void Scheduler::tickle() { TIHI_LOG_INFO(g_sys_logger) << "tickle"; }
 
 bool Scheduler::stopping() {
     mutex_type::mutex lock(mutex_);
-    return auto_stop_ && stopping_ && fibers_.empty() && active_thread_count_ == 0;
+    return auto_stop_ && stopping_ && fibers_.empty() &&
+           active_thread_count_ == 0;
 }
 
 void Scheduler::set_this() { t_scheduler = this; }

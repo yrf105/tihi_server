@@ -47,7 +47,7 @@ void IOManager::Event::resetEventContext(IOManager::Event::EventContext& ectx) {
 
 IOManager::IOManager(size_t threads, bool use_caller, const std::string& name)
     : Scheduler(threads, use_caller, name) {
-    epfd_ = epoll_create1(0);
+    epfd_ = epoll_create(5000);
     TIHI_ASSERT((epfd_ >= 0));
 
     int ret = pipe(pipefd_);
@@ -91,7 +91,7 @@ int IOManager::addEvent(int fd, EventType type, std::function<void()> cb) {
     } else {
         lock.unlock();
         mutex_type::write_lock lock2(mutex_);
-        resize(fd * 1.2);
+        resize(fd * 1.5);
         event = events_[fd];
     }
 
@@ -108,8 +108,8 @@ int IOManager::addEvent(int fd, EventType type, std::function<void()> cb) {
     memset(&epevent, 0, sizeof(epevent));
     epevent.data.ptr = event;
     epevent.events = event->types_ | EPOLLET | type;
-    int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
-    TIHI_ASSERT(ret == 0);
+    // int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
+    // TIHI_ASSERT(ret == 0);
     int rt = epoll_ctl(epfd_, op, fd, &epevent);
     if (rt) {
         TIHI_LOG_ERROR(g_sys_logger)
@@ -232,7 +232,7 @@ bool IOManager::cancelEvent(int fd, EventType type) {
 
 bool IOManager::cancelAll(int fd) {
     mutex_type::read_lock lock(mutex_);
-    if (events_.size() <= size_t(fd)) {
+    if (events_.size() <= static_cast<size_t>(fd)) {
         return false;
     }
     Event* event = events_[fd];
@@ -246,7 +246,7 @@ bool IOManager::cancelAll(int fd) {
         return false;
     }
 
-    int rt = epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, nullptr);
+    int rt = epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, NULL);
     if (rt) {
         TIHI_LOG_ERROR(g_sys_logger)
             << "rt: " << rt << " epoll_ctl(" << epfd_ << ", " << EPOLL_CTL_DEL
@@ -330,6 +330,7 @@ void IOManager::idle() {
         std::vector<std::function<void()>> cbs;
         expiredTimerCb(cbs);
         if (!cbs.empty()) {
+            // TIHI_LOG_DEBUG(g_sys_logger) << "size = " << cbs.size();
             schedule(cbs.begin(), cbs.end());
             cbs.clear();
         }
@@ -393,9 +394,11 @@ void IOManager::idle() {
 }
 
 void IOManager::resize(size_t size) {
+    size_t old_size = events_.size();
+
     events_.resize(size);
 
-    for (size_t i = 0; i < events_.size(); ++i) {
+    for (size_t i = old_size; i < events_.size(); ++i) {
         if (!events_[i]) {
             events_[i] = new Event;
             events_[i]->fd_ = i;

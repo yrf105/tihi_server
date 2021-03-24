@@ -104,6 +104,9 @@ void Fiber::reset(std::function<void()> cb) {
     makecontext(&context_, Fiber::MainFunc, 0);
 }
 
+/**
+ * 从调度器的主协程切换到当前协程
+*/
 void Fiber::swapIn() {
     TIHI_ASSERT((state_ != EXEC));
     state_ = EXEC;
@@ -115,6 +118,9 @@ void Fiber::swapIn() {
         "swapcontext");
 }
 
+/**
+ * 从当前协程切换到调度器的主协程
+*/
 void Fiber::swapOut() {
     SetThis(Scheduler::MainFiber());
 
@@ -123,6 +129,9 @@ void Fiber::swapOut() {
         "swapcontext");
 }
 
+/**
+ * 从真正的主协程切换到当前协程
+*/
 void Fiber::call() {
     state_ = EXEC;
     SetThis(this);
@@ -130,6 +139,9 @@ void Fiber::call() {
                  "swapcontext");
 }
 
+/**
+ * 从当前协程切换到真正的主协程
+*/
 void Fiber::back() {
     SetThis(t_threadFiber.get());
 
