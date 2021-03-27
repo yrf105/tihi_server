@@ -17,6 +17,7 @@ public:
     using ptr = std::shared_ptr<Address>;
     virtual ~Address() {}
     int family() const;
+    virtual sockaddr* addr() = 0;
     virtual const sockaddr* addr() const = 0;
     virtual socklen_t addrLen() const = 0;
     virtual std::ostream& insert(std::ostream& os) const = 0;
@@ -68,6 +69,7 @@ public:
     using ptr = std::shared_ptr<IPAddress>;
     IPv4Address(const sockaddr_in& addr);
     IPv4Address(uint32_t addr = INADDR_ANY, uint32_t port = 0);
+    sockaddr* addr() override;
     const sockaddr* addr() const override;
     socklen_t addrLen() const override;
     std::ostream& insert(std::ostream& os) const override;
@@ -91,6 +93,7 @@ public:
     IPv6Address(const sockaddr_in6& addr);
     IPv6Address(const uint8_t addr[16], uint32_t port = 0);
 
+    sockaddr* addr() override;
     const sockaddr* addr() const override;
     socklen_t addrLen() const override;
     std::ostream& insert(std::ostream& os) const override;
@@ -113,8 +116,10 @@ public:
     UnixAddress();
     UnixAddress(const std::string& path);
 
+    sockaddr* addr() override;
     const sockaddr* addr() const override;
     socklen_t addrLen() const override;
+    void set_len(socklen_t len);
     std::ostream& insert(std::ostream& os) const override;
 
 private:
@@ -128,6 +133,7 @@ public:
     UnknownAddress(int family);
     UnknownAddress(const sockaddr& addr);
 
+    sockaddr* addr() override;
     const sockaddr* addr() const override;
     socklen_t addrLen() const override;
     std::ostream& insert(std::ostream& os) const override;

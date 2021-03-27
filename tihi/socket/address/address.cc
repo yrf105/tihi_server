@@ -142,7 +142,6 @@ Address::ptr Address::Create(const sockaddr* addr, socklen_t len) {
     return res;
 }
 
-
 IPAddress::ptr IPAddress::Create(const char* addr, uint32_t port) {
     addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -178,7 +177,6 @@ IPAddress::ptr IPAddress::Create(const char* addr, uint32_t port) {
 
     return nullptr;
 }
-
 
 int Address::family() const { return addr()->sa_family; }
 
@@ -226,13 +224,14 @@ IPv4Address::ptr IPv4Address::Create(const char* ip, uint32_t port) {
     return IPv4Address::ptr(new IPv4Address(addr));
 }
 
-
 IPv4Address::IPv4Address(uint32_t addr, uint32_t port) {
     memset(&addr_, 0, sizeof(addr_));
     addr_.sin_family = AF_INET;
     addr_.sin_port = hton(port);
     addr_.sin_addr.s_addr = hton(addr);
 }
+
+sockaddr* IPv4Address::addr() { return (sockaddr*)(&addr_); }
 
 const sockaddr* IPv4Address::addr() const { return (sockaddr*)(&addr_); }
 
@@ -311,6 +310,7 @@ IPv6Address::IPv6Address(const uint8_t addr[16], uint32_t port) {
     memcpy(&addr_.sin6_addr.s6_addr, addr, 16);
 }
 
+sockaddr* IPv6Address::addr() { return (sockaddr*)(&addr_); }
 const sockaddr* IPv6Address::addr() const { return (sockaddr*)(&addr_); }
 
 socklen_t IPv6Address::addrLen() const { return sizeof(addr_); }
@@ -415,9 +415,15 @@ UnixAddress::UnixAddress(const std::string& path) {
     len_ += offsetof(sockaddr_un, sun_path);
 }
 
+sockaddr* UnixAddress::addr() { return (sockaddr*)(&addr_); }
+
 const sockaddr* UnixAddress::addr() const { return (sockaddr*)(&addr_); }
 
 socklen_t UnixAddress::addrLen() const { return len_; }
+
+void UnixAddress::set_len(socklen_t len) {
+    len_ = len;
+}
 
 std::ostream& UnixAddress::insert(std::ostream& os) const {
     if (len_ > offsetof(sockaddr_un, sun_path) && addr_.sun_path[0] == '\0') {
@@ -434,6 +440,8 @@ UnknownAddress::UnknownAddress(int family) {
     memset(&addr_, 0, sizeof(addr_));
     addr_.sa_family = family;
 }
+
+sockaddr* UnknownAddress::addr() { return (sockaddr*)(&addr_); }
 
 const sockaddr* UnknownAddress::addr() const { return (sockaddr*)(&addr_); }
 

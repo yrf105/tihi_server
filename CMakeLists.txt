@@ -39,7 +39,8 @@ set(LIB_SRC
     tihi/timer/timer.cc
     tihi/hook/hook.cc
     tihi/hook/fd_manager.cc
-    tihi/socket/address/address.cc)
+    tihi/socket/address/address.cc
+    tihi/socket/socket/socket.cc)
 
 set(LIBS
     tihi
@@ -60,6 +61,7 @@ tihi_add_executable(test_scheduler "tests/test_scheduler.cc" tihi "${LIBS}")
 tihi_add_executable(test_iomanager "tests/test_iomanager.cc" tihi "${LIBS}")
 tihi_add_executable(test_hook "tests/test_hook.cc" tihi "${LIBS}")
 tihi_add_executable(test_address "tests/test_address.cc" tihi "${LIBS}")
+tihi_add_executable(test_socket "tests/test_socket.cc" tihi "${LIBS}")
 # add_executable(test_config tests/test_config.cc)
 # add_dependencies(test_config tihi)
 # target_link_libraries(test_config tihi -L/home/wddxrw/myproject/tihi_server/third_party/yaml-cpp/bulid -lyaml-cpp)

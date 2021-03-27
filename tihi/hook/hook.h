@@ -8,11 +8,13 @@
 #include <sys/uio.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdint.h>
 
 
 namespace tihi {
 bool is_hook_enable();
 void set_hook_enable(bool flag);
+int connect_with_timeout(int sockfd, const struct sockaddr *addr, socklen_t addrlen, uint64_t timeout);
 }  // namespace tihi
 
 extern "C" {
