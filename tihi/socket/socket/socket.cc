@@ -114,7 +114,7 @@ bool Socket::set_option(int level, int op, void* val, long unsigned int len) {
 bool Socket::init(int sockfd) {
     FdCtx::ptr ctx = FdMgr::GetInstance()->fd(sockfd);
     if (ctx && ctx->is_socket()) {
-        sockfd = sockfd_;
+        sockfd_ = sockfd;
         is_connected_ = true;
         local_addr();
         remote_addr();
@@ -210,11 +210,12 @@ bool Socket::listen(int backlog) {
 Socket::ptr Socket::accept() {
     Socket::ptr sock(new Socket(family_, type_, protocol_));
     int connfd = ::accept(sockfd_, NULL, NULL);
-    if (connfd) {
+    if (connfd < 0) {
         TIHI_LOG_ERROR(g_sys_logger)
             << "accept(fd=" << sockfd_ << ") errno=" << errno
             << " strerror=" << strerror(errno);
     }
+
 
     if (sock->init(connfd)) {
         return sock;
@@ -424,9 +425,9 @@ std::ostream& Socket::dump(std::ostream& os) const {
     os << "{Socket sockfd: " << sockfd_ << " family: " << family_
        << " type: " << type_ << " protocol: " << protocol_
        << " isconnected: " << isConnected() << " localAddr: "
-       << ((local_addr_ != nullptr) ? local_addr_->toString() : 0)
+       << ((local_addr_ != nullptr) ? local_addr_->toString() : "")
        << " remoteAddr: "
-       << ((remote_addr_ != nullptr) ? remote_addr_->toString() : 0);
+       << ((remote_addr_ != nullptr) ? remote_addr_->toString() : "");
 
     return os;
 }
@@ -464,4 +465,9 @@ void Socket::newSock() {
             << " strerror=" << strerror(errno);
     }
 }
+
+std::ostream& operator<<(std::ostream& os, const Socket& sock) {
+    return sock.dump(os);
+}
+
 }  // namespace tihi

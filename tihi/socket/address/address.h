@@ -142,6 +142,8 @@ private:
     sockaddr addr_;
 };
 
+std::ostream& operator<<(std::ostream& os, const Address& addr);
+
 }  // namespace tihi
 
 #endif  // TIHI_SOCKET_ADDRESS_ADDRESS_H_

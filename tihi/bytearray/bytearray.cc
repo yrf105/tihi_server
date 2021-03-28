@@ -283,7 +283,7 @@ std::string ByteArray::readStringVint() {
 void ByteArray::clear() {
     curr_pos_ = size_ = 0;
     capacity_ = base_size_;
-    Node* tmp = root_;
+    Node* tmp = root_->next;
     while (tmp) {
         curr_ = tmp;
         tmp = tmp->next;
@@ -396,8 +396,12 @@ void ByteArray::read(void* buf, size_t sz) const {
 
 
 void ByteArray::set_postion(size_t pos) {
-    if (pos > size_) {
+    if (pos > capacity_) {
         throw std::out_of_range("set position out of range");
+    }
+
+    if (pos > size_) {
+        size_ = pos;
     }
 
     curr_pos_ = pos;

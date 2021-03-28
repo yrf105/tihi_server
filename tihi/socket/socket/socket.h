@@ -112,6 +112,8 @@ private:
     Address::ptr remote_addr_;
 };
 
+std::ostream& operator<<(std::ostream& os, const Socket& sock);
+
 } // namespace tihi
 
 #endif // TIHI_SOCKET_SOCKET_SOCKET_H_

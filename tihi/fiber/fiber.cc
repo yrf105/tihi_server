@@ -196,7 +196,10 @@ void Fiber::MainFunc() {
         curr->state_ = TERM;
     } catch (std::exception& ex) {
         curr->state_ = EXCEP;
-        TIHI_LOG_FATAL(g_sys_logger) << "Fiber Exception " << ex.what();
+        /**
+         * 协程在执行过程中抛出异常就会在进入这里，并打印出异常情况
+        */
+        TIHI_LOG_FATAL(g_sys_logger) << "Fiber Exception: " << ex.what();
     } catch (...) {
         curr->state_ = EXCEP;
         TIHI_LOG_FATAL(g_sys_logger) << "Fiber Exception";

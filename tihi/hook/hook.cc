@@ -135,9 +135,9 @@ retry:
             }
             return -1;
         } else {
-            TIHI_LOG_DEBUG(g_sys_logger) << "<" << hook_fun_name << ">";
+            // TIHI_LOG_DEBUG(g_sys_logger) << "<" << hook_fun_name << ">";
             tihi::Fiber::YieldToHold();
-            TIHI_LOG_DEBUG(g_sys_logger) << "<" << hook_fun_name << ">";
+            // TIHI_LOG_DEBUG(g_sys_logger) << "<" << hook_fun_name << ">";
             if (timer) {
                 timer->cancel();
             }

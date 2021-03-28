@@ -21,7 +21,7 @@ http_method StringToHttpMethod(const std::string& str) {
 
 http_method CharsToHttpMethod(const char* str) {
 #define XX(num, name, string)            \
-    if (strcmp(str, #name) == 0) {       \
+    if (strncmp(str, #name, strlen(#name)) == 0) {       \
         return http_method::HTTP_##name; \
     }
 
@@ -162,6 +162,13 @@ std::ostream& HttpRequest::dump(std::ostream& os) const {
     return os;
 }
 
+const std::string HttpRequest::toString() const {
+    std::stringstream ss;
+    dump(ss);
+    return ss.str();
+}
+
+
 
 HttpResponse::HttpResponse(uint8_t version, bool keep_alive)
     : version_(version),
@@ -205,6 +212,13 @@ std::ostream& HttpResponse::dump(std::ostream& os) const {
 
     return os;
 }
+
+const std::string HttpResponse::toString() const {
+    std::stringstream ss;
+    dump(ss);
+    return ss.str();
+}
+
 
 }  // namespace http
 

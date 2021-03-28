@@ -451,4 +451,8 @@ std::ostream& UnknownAddress::insert(std::ostream& os) const {
     return os << "[UNKNOWN_ADDRESS family: " << addr_.sa_family << "]";
 }
 
+std::ostream& operator<<(std::ostream& os, const Address& addr) {
+    return addr.insert(os);
+}
+
 }  // namespace tihi

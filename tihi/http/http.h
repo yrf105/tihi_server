@@ -8,6 +8,10 @@
 #include <sstream>
 #include <string>
 
+#include "http11_common.h"
+#include "http11_parser.h"
+#include "httpclient_parser.h"
+
 namespace tihi {
 
 namespace http {
@@ -187,6 +191,7 @@ public:
     bool keep_alive() const { return keep_alive_; }
     const std::string& path() const { return path_; }
     const std::string& query() const { return query_; }
+    const std::string& fragment() const { return fragment_; }
     const std::string& body() const { return body_; }
 
     const str_to_str& headers() const { return headers_; }
@@ -197,6 +202,7 @@ public:
     void set_version(uint8_t v) { version_ = v; }
     void set_path(const std::string& path) { path_ = path; }
     void set_query(const std::string& query) { query_ = query; }
+    void set_fragment(const std::string& fragment) { fragment_ = fragment; }
     void set_body(const std::string& body) { body_ = body; }
     void set_keep_alive(bool keep_alive) { keep_alive_ = keep_alive; }
 
@@ -251,6 +257,7 @@ public:
     }
 
     std::ostream& dump(std::ostream& os) const;
+    const std::string toString() const;
 private:
     http_method method_;
     std::string path_;
@@ -302,6 +309,7 @@ public:
     }
 
     std::ostream& dump(std::ostream& os) const;
+    const std::string toString() const;
 private:
     uint8_t version_;
     http_status status_;
