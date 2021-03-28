@@ -41,7 +41,8 @@ set(LIB_SRC
     tihi/hook/fd_manager.cc
     tihi/socket/address/address.cc
     tihi/socket/socket/socket.cc
-    tihi/bytearray/bytearray.cc)
+    tihi/bytearray/bytearray.cc
+    tihi/http/http.cc)
 
 set(LIBS
     tihi
@@ -64,6 +65,7 @@ tihi_add_executable(test_hook "tests/test_hook.cc" tihi "${LIBS}")
 tihi_add_executable(test_address "tests/test_address.cc" tihi "${LIBS}")
 tihi_add_executable(test_socket "tests/test_socket.cc" tihi "${LIBS}")
 tihi_add_executable(test_bytearray "tests/test_bytearray.cc" tihi "${LIBS}")
+tihi_add_executable(test_http "tests/test_http.cc" tihi "${LIBS}")
 # add_executable(test_config tests/test_config.cc)
 # add_dependencies(test_config tihi)
 # target_link_libraries(test_config tihi -L/home/wddxrw/myproject/tihi_server/third_party/yaml-cpp/bulid -lyaml-cpp)
