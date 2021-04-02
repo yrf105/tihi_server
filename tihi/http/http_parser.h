@@ -19,6 +19,10 @@ public:
     HttpRequest::ptr data() { return data_; }
     void set_error(int error) { error_ = error; }
     uint64_t content_length() const;
+public:
+    static uint64_t GetHttpRequestBufferSize();
+    static uint64_t GetHttpRequestMaxBufferSize();
+
 private:
     http_parser parser_;
     HttpRequest::ptr data_;

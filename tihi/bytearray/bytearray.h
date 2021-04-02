@@ -102,8 +102,8 @@ public:
     std::string toString() const;
     std::string toHexString() const;
 
-    uint64_t getReadBuffers(std::vector<iovec>& buffers, uint64_t len = ~0ull) const;
-    const uint64_t getReadBuffers(std::vector<iovec>& buffers, uint64_t len = ~0ull, uint64_t pos = 0) const;
+    uint64_t getReadBuffers(std::vector<iovec>& buffers, uint64_t len) const;
+    const uint64_t getReadBuffers(std::vector<iovec>& buffers, uint64_t len, uint64_t) const;
     uint64_t getWriteBuffers(std::vector<iovec>& buffers, uint64_t len = ~0ull);
 
     size_t size() const { return size_; }

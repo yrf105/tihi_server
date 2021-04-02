@@ -43,10 +43,15 @@ set(LIB_SRC
     tihi/socket/socket/socket.cc
     tihi/bytearray/bytearray.cc
     tihi/http/http.cc
+    tihi/http/servlet.cc
+    tihi/http/http_server.cc
+    tihi/http/http_session.cc
     tihi/http/http11_parser.rl.cc
     tihi/http/httpclient_parser.rl.cc
     tihi/http/http_parser.cc
-    tihi/tcp_server/tcp_server.cc)
+    tihi/tcp_server/tcp_server.cc
+    tihi/socket/stream/stream.cc
+    tihi/socket/stream/socket_stream.cc)
 
 set(LIBS
     tihi
@@ -73,6 +78,7 @@ tihi_add_executable(test_http "tests/test_http.cc" tihi "${LIBS}")
 tihi_add_executable(test_http_parser "tests/test_http_parser.cc" tihi "${LIBS}")
 tihi_add_executable(test_tcp_server "tests/test_tcp_server.cc" tihi "${LIBS}")
 tihi_add_executable(echo_server "example/echo_server.cc" tihi "${LIBS}")
+tihi_add_executable(test_http_server "tests/test_http_server.cc" tihi "${LIBS}")
 # add_executable(test_config tests/test_config.cc)
 # add_dependencies(test_config tihi)
 # target_link_libraries(test_config tihi -L/home/wddxrw/myproject/tihi_server/third_party/yaml-cpp/bulid -lyaml-cpp)

@@ -322,6 +322,9 @@ private:
 
 };
 
+std::ostream& operator<<(std::ostream& os, const HttpRequest& req);
+std::ostream& operator<<(std::ostream& os, const HttpResponse& res);
+
 }  // namespace http
 
 }  // namespace tihi
