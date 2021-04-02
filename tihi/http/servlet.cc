@@ -36,7 +36,7 @@ void ServletDispatch::addServlet(const std::string& uri, Servlet::ptr slt) {
 void ServletDispatch::addServlet(const std::string& uri,
                                  FunctionServlet::callback cb) {
     rwmutex_type::write_lock lock(m_mutex);
-    m_datas[uri].reset(new FunctionServlet(cb));   
+    m_datas[uri].reset(new FunctionServlet(cb));
 }
 
 void ServletDispatch::addGlobServlet(const std::string& uri, Servlet::ptr slt) {
@@ -103,9 +103,12 @@ Servlet::ptr ServletDispatch::matched_servlet(const std::string& uri) {
 
 NotFoundServlet::NotFoundServlet() : Servlet("NotFoundServlet") {}
 
-int32_t NotFoundServlet::handle(HttpRequest::ptr request, HttpResponse::ptr response,
-                           HttpSession::ptr session) {
-    static const std::string& RSP_BODY = "<http><body>404 NOT FOUND</body></http>";
+int32_t NotFoundServlet::handle(HttpRequest::ptr request,
+                                HttpResponse::ptr response,
+                                HttpSession::ptr session) {
+    static const std::string& RSP_BODY =
+        "<html><head><title>404 NOT FOUND</title></head><body><center>404 NOT "
+        "FOUND</center><hr><center>tihi/1.0.0</center></body></html>";
     response->set_status(tihi::http::http_status::HTTP_STATUS_NOT_FOUND);
     response->set_header("Content-Type", "text/html");
     response->set_body(RSP_BODY);

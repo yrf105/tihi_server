@@ -21,17 +21,20 @@ HttpRequest::ptr HttpSession::recvRequest() {
 
         int len = read(data + offset, buff_size - offset);
         if (len <= 0) {
+            close();
             return nullptr;
         }
 
         len += offset;
         size_t nparse = parser->execute(data, len);
         if (parser->has_error()) {
+            close();
             return nullptr;
         }
 
         offset = len - nparse;
         if (offset == buff_size) {
+            close();
             return nullptr;
         }
 
@@ -39,21 +42,27 @@ HttpRequest::ptr HttpSession::recvRequest() {
             break;
         }
     } while (true);
-    int64_t lenght = parser->content_length();
-    while (lenght > 0) {
+    int64_t length = parser->content_length();
+    while (length > 0) {
         std::string body;
-        body.reserve(lenght);
-
-        if (lenght >= (int64_t)offset) {
-            body.append(data, offset);
+        body.resize(length);
+        
+        int len = 0;
+        if (length >= (int64_t)offset) {
+            // body.append(data, offset);
+            memcpy(&body[0], data, offset);
+            len = offset;
         } else {
-            body.append(data, lenght);
+            // body.append(data, length);
+            memcpy(&body[0], data, length);
+            len = length;
         }
 
-        lenght -= offset;
+        length -= offset;
 
-        if (lenght > 0) {
-            if (readFixSize(&body[body.size()], lenght) <= 0) {
+        if (length > 0) {
+            if (readFixSize(&body[len], length) <= 0) {
+                close();
                 return nullptr;
             }
         }

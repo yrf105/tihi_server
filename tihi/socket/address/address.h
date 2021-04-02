@@ -46,6 +46,8 @@ public:
         std::vector<std::pair<Address::ptr, uint32_t>>& res,
         const std::string& ifa_name, int family);
 
+    virtual void set_port(uint16_t port) = 0;
+
 private:
 };
 
@@ -121,7 +123,8 @@ public:
     socklen_t addrLen() const override;
     void set_len(socklen_t len);
     std::ostream& insert(std::ostream& os) const override;
-
+private:
+    virtual void set_port(uint16_t port){};
 private:
     sockaddr_un addr_;
     socklen_t len_;
@@ -137,6 +140,8 @@ public:
     const sockaddr* addr() const override;
     socklen_t addrLen() const override;
     std::ostream& insert(std::ostream& os) const override;
+private:
+    virtual void set_port(uint16_t port){};
 
 private:
     sockaddr addr_;

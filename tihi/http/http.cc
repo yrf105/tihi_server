@@ -168,8 +168,6 @@ const std::string HttpRequest::toString() const {
     return ss.str();
 }
 
-
-
 HttpResponse::HttpResponse(uint8_t version, bool keep_alive)
     : version_(version),
       status_(http_status::HTTP_STATUS_OK),

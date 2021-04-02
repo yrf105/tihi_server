@@ -90,6 +90,10 @@ FdManager::FdManager() {
 }
 
 FdCtx::ptr FdManager::fd(int fd, bool auto_create) {
+    if (fd < 0) {
+        return nullptr;
+    } 
+
     rwmutex_type::read_lock lock(mutex_);
     if (fds_.size() <= (size_t)fd) {
         if (auto_create) {
