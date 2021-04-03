@@ -68,7 +68,7 @@ Fiber::~Fiber() {
         /*
         子协程的析构在主协程中完成
         */
-        TIHI_LOG_DEBUG(g_sys_logger)
+        TIHI_LOG_INFO(g_sys_logger)
             << "sub-fiber: " << id() << " destruct in master-fiber";
     } else {
         // 主协程退出了
